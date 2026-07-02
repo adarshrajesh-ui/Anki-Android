@@ -31,6 +31,7 @@ import com.ichi2.anki.common.preferences.sharedPrefs
 import com.ichi2.anki.libanki.DeckId
 import com.ichi2.anki.ui.internationalization.sentenceCase
 import com.ichi2.testutils.BackupManagerTestUtilities.setupSpaceForBackup
+import net.ankiweb.rsdroid.testing.RustBackendLoader
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.MatcherAssert
 import org.junit.After
@@ -47,6 +48,10 @@ class DeckPickerContextMenuTest {
 
     @Before
     fun before() {
+        // This test doesn't extend RobolectricTest, so the rsdroid backend native library
+        // (needed once DeckPickerContextMenu option labels resolve backend translation strings)
+        // is not loaded into this Robolectric sandbox automatically. Load it explicitly.
+        RustBackendLoader.ensureSetup()
         val context = ApplicationProvider.getApplicationContext<AnkiDroidApp>()
         context.sharedPrefs().edit { putBoolean(IntroductionActivity.INTRODUCTION_SLIDES_SHOWN, true) }
         setupSpaceForBackup(context)
