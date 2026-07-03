@@ -135,6 +135,8 @@ fun Order.toDisplayString(translations: Translations) =
         Order.REVERSE_ADDED -> translations.decksLatestAddedFirst()
         Order.RETRIEVABILITY_ASCENDING -> translations.deckConfigSortOrderRetrievabilityAscending()
         Order.RETRIEVABILITY_DESCENDING -> translations.deckConfigSortOrderRetrievabilityDescending()
+        // CFA fork: anki 26.05 backend adds RELATIVE_OVERDUENESS to the filtered-deck sort order enum.
+        Order.RELATIVE_OVERDUENESS -> translations.decksRelativeOverdueness()
         Order.UNRECOGNIZED -> throw IllegalArgumentException("Can't display an unknown enum value.")
     }
 
