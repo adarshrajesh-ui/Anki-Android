@@ -24,6 +24,10 @@
         android:enabled="false"
         android:title="@string/note_editor_copy_note"/>
     <item
+        android:id="@+id/action_cfa_ai_back"
+        android:title="@string/cfa_ai_back"
+        ankidroid:showAsAction="never"/>
+    <item
         android:id="@+id/action_font_size"
         android:title="@string/menu_font_size"
         ankidroid:showAsAction="never"/>

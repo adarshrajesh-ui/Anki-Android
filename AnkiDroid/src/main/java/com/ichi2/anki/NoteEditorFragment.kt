@@ -75,6 +75,7 @@ import com.ichi2.anki.OnContextAndLongClickListener.Companion.setOnContextAndLon
 import com.ichi2.anki.android.input.ShortcutGroup
 import com.ichi2.anki.android.input.ShortcutGroupProvider
 import com.ichi2.anki.android.input.shortcut
+import com.ichi2.anki.cfa.CfaAiClient
 import com.ichi2.anki.common.android.animationEnabled
 import com.ichi2.anki.common.android.appContext
 import com.ichi2.anki.common.annotations.NeedsTest
@@ -170,7 +171,9 @@ import com.ichi2.utils.neutralButton
 import com.ichi2.utils.positiveButton
 import com.ichi2.utils.show
 import com.ichi2.utils.title
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import net.ankiweb.rsdroid.Backend
 import org.json.JSONArray
 import timber.log.Timber
@@ -1465,6 +1468,11 @@ class NoteEditorFragment :
                 copyNote()
                 return true
             }
+            R.id.action_cfa_ai_back -> {
+                Timber.i("NoteEditor:: CFA AI Back button pressed")
+                fillBackWithAi()
+                return true
+            }
             R.id.action_font_size -> {
                 Timber.i("NoteEditor:: Font Size button pressed")
                 val fontSizeDialog = IntegerDialog()
@@ -1538,6 +1546,40 @@ class NoteEditorFragment :
 
     fun copyNote() {
         launchNoteEditor(NoteEditorLauncher.CopyNote(deckId, fieldsText, selectedTags))
+    }
+
+    /**
+     * CFA fork — "AI Back": draft the card's back from its front via the
+     * server-side AI proxy (the key never lives on the device). Runs off the UI
+     * thread, fills the back on success, and reports provenance; on any failure
+     * it leaves the back untouched (deterministic AI-off behaviour).
+     */
+    private fun fillBackWithAi() {
+        val fields = editFields
+        if (fields == null || fields.size < 2) {
+            showSnackbar(R.string.cfa_ai_back_no_back_field)
+            return
+        }
+        val front =
+            fields[0]
+                .text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        if (front.isEmpty()) {
+            showSnackbar(R.string.cfa_ai_back_need_front)
+            return
+        }
+        launchCatchingTask {
+            showSnackbar(R.string.cfa_ai_back_drafting)
+            val result = withContext(Dispatchers.IO) { CfaAiClient.tabfill(getColUnsafe, front) }
+            if (result.ok && result.text.isNotBlank()) {
+                fields[1].setText(result.text)
+                showSnackbar(getString(R.string.cfa_ai_back_done, result.model ?: "ai"))
+            } else {
+                showSnackbar(getString(R.string.cfa_ai_back_unavailable, result.error ?: "try again"))
+            }
+        }
     }
 
     private fun launchNoteEditor(arguments: NoteEditorLauncher) {
