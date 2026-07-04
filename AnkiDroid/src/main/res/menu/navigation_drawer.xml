@@ -10,11 +10,6 @@
             android:id="@+id/nav_cfa_readiness"
             android:icon="@drawable/ic_cfa_readiness"
             android:title="@string/cfa_nav_exam_readiness" />
-        <!-- CFA fork: prominent account entry (Log out / Log in to sync). -->
-        <item
-            android:id="@+id/nav_cfa_sync_account"
-            android:icon="@drawable/ic_sync"
-            android:title="@string/cfa_nav_sync_account" />
         <item
             android:id="@+id/nav_decks"
             android:icon="@drawable/ic_list_black" />
@@ -25,6 +20,12 @@
         <item
             android:id="@+id/nav_stats"
             android:icon="@drawable/ic_bar_chart_black"/>
+        <!-- CFA fork: Log out — right under Statistics. Opens the sync account
+             screen (Log out when logged in, Log in otherwise). -->
+        <item
+            android:id="@+id/nav_cfa_sync_account"
+            android:icon="@drawable/ic_sync"
+            android:title="@string/cfa_nav_sync_account" />
     </group>
     <group  android:id="@+id/group2">
         <item
