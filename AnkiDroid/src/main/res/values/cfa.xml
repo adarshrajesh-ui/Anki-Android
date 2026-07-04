@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+  CFA fork: shared branding tokens + strings for the ankiCFA surfaces
+  (nav drawer entry, Exam Readiness screen, exam-config editor, exam-priority
+  study). Colours mirror the desktop CFA design system
+  (docs/cfa/DESIGN-SYSTEM.md): a structural navy with a warm orange accent.
+  Additive only — nothing here overrides upstream resources.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+
+    <!-- Brand palette (from the CFA design system single source of truth). -->
+    <color name="cfa_navy">#122B46</color>
+    <color name="cfa_navy_hover">#0E2238</color>
+    <color name="cfa_accent">#DA5C01</color>
+    <color name="cfa_accent_soft">#FCEBDA</color>
+    <color name="cfa_pass">#15803D</color>
+    <color name="cfa_fail">#B91C1C</color>
+    <color name="cfa_warn">#B45309</color>
+    <color name="cfa_surface">#F3F6F8</color>
+    <color name="cfa_line">#E7E9EC</color>
+    <color name="cfa_ink">#122B46</color>
+    <color name="cfa_muted">#4D5C6D</color>
+
+    <!-- Nav drawer / branding. Not translated (feature in progress). -->
+    <string name="cfa_nav_exam_readiness">Exam Readiness</string>
+    <string name="cfa_title_exam_readiness">Exam Readiness</string>
+
+    <!-- Exam Readiness screen. -->
+    <string name="cfa_readiness_memory">Memory</string>
+    <string name="cfa_readiness_performance">Performance</string>
+    <string name="cfa_readiness_readiness">Readiness</string>
+    <string name="cfa_readiness_per_topic">Per-topic recall</string>
+    <string name="cfa_readiness_source_fallback">Source: on-device (deterministic)</string>
+    <string name="cfa_readiness_source_rpc">Source: shared engine</string>
+    <string name="cfa_readiness_refresh">Refresh</string>
+
+    <!-- Exam config editor. -->
+    <string name="cfa_exam_config_title">Exam configuration</string>
+    <string name="cfa_exam_config_date_label">Exam date</string>
+    <string name="cfa_exam_config_pick_date">Pick date</string>
+    <string name="cfa_exam_config_save">Save</string>
+    <string name="cfa_exam_config_saved">Exam configuration saved</string>
+    <string name="cfa_exam_config_no_date">No exam date set</string>
+
+    <!-- Exam-priority study action. -->
+    <string name="cfa_study_by_priority">Study by Exam Priority</string>
+    <string name="cfa_study_priority_empty">No cards to study by exam priority yet</string>
+    <string name="cfa_study_priority_deck">CFA Exam Priority</string>
+
+</resources>

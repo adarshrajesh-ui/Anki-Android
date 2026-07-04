@@ -301,6 +301,27 @@
             >
         </activity>
 
+        <!-- CFA fork: Exam Readiness surface + its exam-config editor and the
+             "Study by Exam Priority" trampoline. All additive, non-exported. -->
+        <activity
+            android:name="com.ichi2.anki.CfaExamReadinessActivity"
+            android:exported="false"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:parentActivityName=".DeckPicker"
+            />
+        <activity
+            android:name="com.ichi2.anki.CfaExamConfigActivity"
+            android:exported="false"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:parentActivityName=".CfaExamReadinessActivity"
+            />
+        <activity
+            android:name="com.ichi2.anki.CfaExamPriorityActivity"
+            android:exported="false"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:parentActivityName=".CfaExamReadinessActivity"
+            />
+
         <!-- Context menu item name is the label, context is the system language -->
         <!-- Note: This appears to require that the target label is variable -->
         <activity-alias
