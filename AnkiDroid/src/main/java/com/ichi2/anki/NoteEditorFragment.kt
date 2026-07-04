@@ -1554,10 +1554,10 @@ class NoteEditorFragment :
      * device). Runs off the UI thread, fills the empty field on success, reports
      * provenance, and leaves the card untouched on any failure (AI-off safe).
      */
-    private fun fillWithAi() {
+    private fun fillWithAi(silent: Boolean = false) {
         val fields = editFields
         if (fields == null || fields.size < 2) {
-            showSnackbar(R.string.cfa_ai_fill_no_two_fields)
+            if (!silent) showSnackbar(R.string.cfa_ai_fill_no_two_fields)
             return
         }
         val front =
@@ -1573,8 +1573,9 @@ class NoteEditorFragment :
                 ?.trim()
                 .orEmpty()
         if (front.isEmpty() == back.isEmpty()) {
-            // both empty or both filled -> nothing to generate
-            showSnackbar(R.string.cfa_ai_fill_need_one_side)
+            // both empty or both filled -> nothing to generate. Silent when fired
+            // by the Tab key so navigation never spams a snackbar.
+            if (!silent) showSnackbar(R.string.cfa_ai_fill_need_one_side)
             return
         }
         launchCatchingTask {
@@ -2055,6 +2056,15 @@ class NoteEditorFragment :
     ) {
         // Listen for changes in the first field so we can re-check duplicate status.
         editText!!.addTextChangedListener(EditFieldTextWatcher(index))
+        // CFA fork: the literal Tab key triggers bidirectional AI Fill (generate
+        // the empty side). Return false so Tab still moves focus normally;
+        // fillWithAi(silent=true) no-ops unless exactly one of front/back is filled.
+        editText.setOnKeyListener { _, keyCode, event ->
+            if (keyCode == KeyEvent.KEYCODE_TAB && event.action == KeyEvent.ACTION_DOWN) {
+                fillWithAi(silent = true)
+            }
+            false
+        }
         if (index == 0) {
             editText.onFocusChangeListener =
                 OnFocusChangeListener { _: View?, hasFocus: Boolean ->
