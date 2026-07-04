@@ -17,14 +17,17 @@ import java.io.File
 /** Pref flag: the bundled CFA decks have been imported (or intentionally skipped). */
 const val CFA_BOOTSTRAP_PREF = "cfa_bootstrap_imported"
 
-/** The bundled study package shipped as an app asset (CFA Level II + Ethics Passages). */
+/** The bundled study package shipped as an app asset (CFA Level II + Ethics Pairs). */
 private const val CFA_BOOTSTRAP_ASSET = "cfa/cfa-bootstrap.apkg"
+
+/** Deck name for the bundled two-vignette minimal-pairs ethics flagship. */
+const val CFA_ETHICS_PAIRS_DECK = "CFA::Ethics Pairs"
 
 /**
  * On the very first launch of a fresh profile, seed the collection with the two
- * bundled CFA study decks — ``CFA Level II`` and the one-passage ``CFA::Ethics
- * Passages`` deck — shipped as an app asset. This is the mobile mirror of the
- * desktop first-run seeder.
+ * bundled CFA study decks — ``CFA Level II`` and the minimal-pairs
+ * ``CFA::Ethics Pairs`` deck — shipped as an app asset. This is the mobile
+ * mirror of the desktop first-run seeder.
  *
  * Guarantees (matching the fork's "additive only / never clobber" rule):
  *  - runs at most once, guarded by [CFA_BOOTSTRAP_PREF];
@@ -72,7 +75,7 @@ suspend fun DeckPicker.maybeImportCfaBootstrapDeck() {
         target.delete()
         Timber.i("CFA bootstrap: imported bundled CFA decks from asset")
 
-        showSnackbar("CFA decks ready — CFA Level II + Ethics Passages imported")
+        showSnackbar("CFA decks ready — CFA Level II + Ethics Pairs imported")
         updateDeckList()
     } catch (e: Exception) {
         // Never let a bad bundle block startup; the user can still import manually.

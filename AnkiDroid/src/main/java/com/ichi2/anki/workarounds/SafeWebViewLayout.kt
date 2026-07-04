@@ -45,7 +45,7 @@ open class SafeWebViewLayout :
             field = value
         }
 
-    protected open fun createWebView() = WebView(context)
+    protected open fun createWebView() = WebView(context.applicationContext)
 
     init {
         addView(webView, webViewLayoutParams)

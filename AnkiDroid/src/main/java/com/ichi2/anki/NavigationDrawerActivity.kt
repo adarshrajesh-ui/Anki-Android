@@ -339,6 +339,11 @@ abstract class NavigationDrawerActivity(
             Runnable {
                 // Take action if a different item selected
                 when (item.itemId) {
+                    R.id.nav_cfa_readiness -> {
+                        Timber.i("Navigating to CFA Exam Readiness")
+                        startActivity(CfaExamReadinessActivity.getIntent(this@NavigationDrawerActivity))
+                    }
+
                     R.id.nav_decks -> {
                         Timber.i("Navigating to decks")
                         val deckPicker = Intent(this@NavigationDrawerActivity, DeckPicker::class.java)

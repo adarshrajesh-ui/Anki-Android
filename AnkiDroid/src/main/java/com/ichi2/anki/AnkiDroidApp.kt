@@ -16,6 +16,7 @@ import android.os.Build
 import android.os.Bundle
 import android.system.Os
 import android.webkit.CookieManager
+import android.webkit.WebView
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
@@ -124,6 +125,17 @@ open class AnkiDroidApp :
         }
 
         ApplicationContextInitializer.setInstance(this)
+
+        // Chromium registers a UiModeManager night-mode callback using the Context of
+        // the first WebView created in the process. If that is a Reviewer Activity
+        // context, the framework retains the destroyed Activity (LeakCanary:
+        // UiModeManager.mContext → Reviewer). Warm up WebView on the application
+        // context before any Activity creates one.
+        try {
+            WebView(applicationContext).destroy()
+        } catch (e: Exception) {
+            Timber.w(e, "WebView application-context warm-up failed")
+        }
 
         initializeAcraCrashReporter()
         initializeNavigator()
