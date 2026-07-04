@@ -25,6 +25,8 @@
     <!-- Nav drawer / branding. Not translated (feature in progress). -->
     <string name="cfa_nav_exam_readiness">Exam Readiness</string>
     <string name="cfa_title_exam_readiness">Exam Readiness</string>
+    <!-- Prominent account entry: opens the sync account screen (Log out when logged in, Log in otherwise). -->
+    <string name="cfa_nav_sync_account">Sync account / Log out</string>
 
     <!-- Exam Readiness screen. -->
     <string name="cfa_readiness_memory">Memory</string>

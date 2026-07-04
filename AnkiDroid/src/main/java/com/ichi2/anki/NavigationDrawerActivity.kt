@@ -36,6 +36,7 @@ import com.google.android.material.navigation.NavigationView
 import com.ichi2.anki.CollectionManager.TR
 import com.ichi2.anki.IntentHandler.Companion.grantedStoragePermissions
 import com.ichi2.anki.NoteEditorFragment.Companion.NoteEditorCaller
+import com.ichi2.anki.account.AccountActivity
 import com.ichi2.anki.common.android.animationEnabled
 import com.ichi2.anki.common.destinations.PreferencesDestination
 import com.ichi2.anki.common.destinations.StatisticsDestination
@@ -347,6 +348,11 @@ abstract class NavigationDrawerActivity(
                     R.id.nav_cfa_readiness -> {
                         Timber.i("Navigating to CFA Exam Readiness")
                         startActivity(CfaExamReadinessActivity.getIntent(this@NavigationDrawerActivity))
+                    }
+
+                    R.id.nav_cfa_sync_account -> {
+                        Timber.i("Navigating to sync account screen")
+                        startActivity(AccountActivity.getIntent(this@NavigationDrawerActivity))
                     }
 
                     R.id.nav_decks -> {
