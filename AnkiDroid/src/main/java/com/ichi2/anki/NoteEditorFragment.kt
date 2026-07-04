@@ -1468,9 +1468,9 @@ class NoteEditorFragment :
                 copyNote()
                 return true
             }
-            R.id.action_cfa_ai_back -> {
-                Timber.i("NoteEditor:: CFA AI Back button pressed")
-                fillBackWithAi()
+            R.id.action_cfa_ai_fill -> {
+                Timber.i("NoteEditor:: CFA AI Fill button pressed")
+                fillWithAi()
                 return true
             }
             R.id.action_font_size -> {
@@ -1549,15 +1549,15 @@ class NoteEditorFragment :
     }
 
     /**
-     * CFA fork — "AI Back": draft the card's back from its front via the
-     * server-side AI proxy (the key never lives on the device). Runs off the UI
-     * thread, fills the back on success, and reports provenance; on any failure
-     * it leaves the back untouched (deterministic AI-off behaviour).
+     * CFA fork — "AI Fill": generate whichever side is EMPTY (front->back or
+     * back->front) via the server-side AI proxy (the key never lives on the
+     * device). Runs off the UI thread, fills the empty field on success, reports
+     * provenance, and leaves the card untouched on any failure (AI-off safe).
      */
-    private fun fillBackWithAi() {
+    private fun fillWithAi() {
         val fields = editFields
         if (fields == null || fields.size < 2) {
-            showSnackbar(R.string.cfa_ai_back_no_back_field)
+            showSnackbar(R.string.cfa_ai_fill_no_two_fields)
             return
         }
         val front =
@@ -1566,18 +1566,27 @@ class NoteEditorFragment :
                 ?.toString()
                 ?.trim()
                 .orEmpty()
-        if (front.isEmpty()) {
-            showSnackbar(R.string.cfa_ai_back_need_front)
+        val back =
+            fields[1]
+                .text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        if (front.isEmpty() == back.isEmpty()) {
+            // both empty or both filled -> nothing to generate
+            showSnackbar(R.string.cfa_ai_fill_need_one_side)
             return
         }
         launchCatchingTask {
-            showSnackbar(R.string.cfa_ai_back_drafting)
-            val result = withContext(Dispatchers.IO) { CfaAiClient.tabfill(getColUnsafe, front) }
+            showSnackbar(R.string.cfa_ai_fill_drafting)
+            val result = withContext(Dispatchers.IO) { CfaAiClient.fill(getColUnsafe, front, back) }
             if (result.ok && result.text.isNotBlank()) {
-                fields[1].setText(result.text)
-                showSnackbar(getString(R.string.cfa_ai_back_done, result.model ?: "ai"))
+                val idx = if (result.target == "front") 0 else 1
+                fields[idx].setText(result.text)
+                val side = if (result.target == "front") "front" else "back"
+                showSnackbar(getString(R.string.cfa_ai_fill_done, side, result.model ?: "ai"))
             } else {
-                showSnackbar(getString(R.string.cfa_ai_back_unavailable, result.error ?: "try again"))
+                showSnackbar(getString(R.string.cfa_ai_fill_unavailable, result.error ?: "try again"))
             }
         }
     }

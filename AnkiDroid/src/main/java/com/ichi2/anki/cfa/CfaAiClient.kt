@@ -17,10 +17,14 @@ import java.io.BufferedReader
 import java.net.HttpURLConnection
 import java.net.URL
 
-/** One AI-Back result. [source] is "ai" on success, "fallback" otherwise. */
+/**
+ * One AI tab-fill result. [source] is "ai" on success, "fallback" otherwise;
+ * [target] is the side that was generated ("back" or "front"), or null.
+ */
 data class CfaAiResult(
     val ok: Boolean,
     val text: String,
+    val target: String?,
     val source: String,
     val model: String?,
     val error: String?,
@@ -49,45 +53,51 @@ object CfaAiClient {
 
     fun proxyToken(col: Collection): String = (col.config.get<String>(TOKEN_KEY) ?: "").ifBlank { DEFAULT_TOKEN }
 
-    /** Draft a card back via the proxy configured in [col]. Never throws. */
-    fun tabfill(
+    /**
+     * Bidirectional tab-fill via the proxy configured in [col]: send both sides,
+     * the server generates whichever is empty (front->back or back->front).
+     * Never throws.
+     */
+    fun fill(
         col: Collection,
         front: String,
-        notetype: String = "",
+        back: String,
         poster: CfaHttpPost = DEFAULT_POST,
-    ): CfaAiResult = tabfill(proxyUrl(col), proxyToken(col), front, notetype, poster)
+    ): CfaAiResult = fill(proxyUrl(col), proxyToken(col), front, back, poster)
 
-    /** Pure overload: draft a back from [front] against the proxy at [baseUrl]. */
-    fun tabfill(
+    /** Pure overload: POST {front, back} to the proxy at [baseUrl]; parse the result. */
+    fun fill(
         baseUrl: String,
         token: String,
         front: String,
-        notetype: String,
+        back: String,
         poster: CfaHttpPost,
     ): CfaAiResult {
-        if (front.isBlank()) {
-            return CfaAiResult(false, "", "fallback", null, "empty_front")
+        if (front.isBlank() == back.isBlank()) {
+            // both empty or both filled -> nothing to generate
+            return CfaAiResult(false, "", null, "fallback", null, "nothing_to_fill")
         }
         val body =
             JSONObject()
                 .put("front", front)
-                .put("notetype", notetype)
+                .put("back", back)
                 .toString()
         return try {
             val (status, resp) = poster.post("${baseUrl.trimEnd('/')}/cfa/tabfill", token, body)
             if (status != 200) {
-                return CfaAiResult(false, "", "fallback", null, "http_$status")
+                return CfaAiResult(false, "", null, "fallback", null, "http_$status")
             }
             val o = JSONObject(resp)
             CfaAiResult(
                 ok = o.optBoolean("ok", false),
                 text = o.optString("text", ""),
+                target = o.optString("target", "").ifBlank { null },
                 source = o.optString("source", "fallback"),
                 model = o.optString("model", "").ifBlank { null },
                 error = o.optString("error", "").ifBlank { null },
             )
         } catch (e: Exception) {
-            CfaAiResult(false, "", "fallback", null, "client_error:${e.javaClass.simpleName}")
+            CfaAiResult(false, "", null, "fallback", null, "client_error:${e.javaClass.simpleName}")
         }
     }
 

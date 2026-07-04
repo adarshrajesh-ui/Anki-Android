@@ -43,13 +43,13 @@
     <string name="cfa_exam_config_saved">Exam configuration saved</string>
     <string name="cfa_exam_config_no_date">No exam date set</string>
 
-    <!-- AI Back (tab-to-fill) — drafts the card back via the server-side AI proxy. -->
-    <string name="cfa_ai_back">AI Back (draft answer)</string>
-    <string name="cfa_ai_back_drafting">Drafting the back with AI…</string>
-    <string name="cfa_ai_back_no_back_field">This note type has no separate back field to fill.</string>
-    <string name="cfa_ai_back_need_front">Add some front content first.</string>
-    <string name="cfa_ai_back_done">Drafted by AI (%1$s)</string>
-    <string name="cfa_ai_back_unavailable">AI unavailable — %1$s. Back left unchanged.</string>
+    <!-- AI Fill (bidirectional tab-fill) — generate the empty side via the AI proxy. -->
+    <string name="cfa_ai_fill">AI Fill (generate empty side)</string>
+    <string name="cfa_ai_fill_drafting">Generating with AI…</string>
+    <string name="cfa_ai_fill_no_two_fields">This note type has no separate front/back to fill.</string>
+    <string name="cfa_ai_fill_need_one_side">Type one side and leave the other empty, then AI Fill generates it.</string>
+    <string name="cfa_ai_fill_done">Drafted the %1$s with AI (%2$s)</string>
+    <string name="cfa_ai_fill_unavailable">AI unavailable — %1$s. Card left unchanged.</string>
 
     <!-- Exam-priority study action. -->
     <string name="cfa_study_by_priority">Study by Exam Priority</string>
