@@ -1,0 +1,32 @@
+# evidence.log — raw checks backing docs/mobile-proof/PROOF.md (AnkiDroid CFA review)
+
+## Recording (ffprobe review_session.mp4)
+codec_name=h264
+width=920
+height=2048
+duration=73.606944
+
+## collection.anki2 pulled after the review — SQLite reads (custom 'unicase' collation; counts only)
+revlog rows        = 45
+distinct cards     = 14
+cards total        = 14
+notes total        = 14
+grade histogram (ease:count) = 0:14 1:2 2:3 3:19 4:7 
+
+## Sample note fields (confirms CFA Level II content)
+- Under the CFA Code &amp; Standards, if local law conflicts with the Code, which governs? |
+- Standard I(C) Misrepresentation: is <i>unintentional</i> plagiarism a violation? | Yes. Om
+- What does adjusted R&sup2; correct for versus R&sup2; in multiple regression? | It penaliz
+- What is the classic symptom of multicollinearity? | Inflated standard errors &rarr; insign
+- Under the equity method, how is the investor's share of investee dividends treated? | As a
+- Rising prices: LIFO vs FIFO effect on COGS and net income? | LIFO &rarr; higher COGS, lowe
+
+## Cold start — am start -W (this session, emulator; guardrail <4s)
+run1 TotalTime=1669ms  run2=1404ms  run3=1457ms
+
+## Kill-app-mid-review x3 (this session)
+each force-stop raced an answer write; each reopen: Reviewer, NO corruption/recovery dialog;
+revlog held at 45 (interrupted writes rolled back atomically); tables readable (cards present).
+
+## check_database (Rust performIntegrityCheck) verdict
+'Database rebuilt and optimized.'  (screenshot: frames/06_check_database_ok.png)

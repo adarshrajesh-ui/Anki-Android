@@ -1694,6 +1694,9 @@ open class DeckPicker :
      */
     private fun onFinishedStartup() {
         launchCatchingTask {
+            // CFA fork (F7): seed the two bundled CFA decks on first launch of a
+            // fresh, empty profile. Idempotent + non-destructive; see CfaBootstrap.kt.
+            maybeImportCfaBootstrapDeck()
             if (!automaticSync()) {
                 BackupPromptDialog.showIfAvailable(this@DeckPicker)
             }
