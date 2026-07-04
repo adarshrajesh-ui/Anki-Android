@@ -1,75 +1,77 @@
-# CFA Speedrun — Mobile (L3) Overnight GNHF Plan
+# CFA Speedrun — Mobile (part of the single GNHF run)
 
-> Durable plan for the mobile GNHF worker. Record progress in
-> `proof/gnhf-speedrun/L3-NOTES.md` (create it). Companion doc:
-> `/Users/adarshrajesh/AlphaWeek2/ankiCFA/proof/friday/SPEEDRUN-PLAN.md` in the desktop repo.
+> Master plan lives in the desktop repo:
+> `/Users/adarshrajesh/AlphaWeek2/ankiCFA/proof/friday/SPEEDRUN-PLAN.md`.
+> Work here on branch **`gnhf/speedrun-mobile`**; commit frequently. Track progress
+> in `proof/gnhf-speedrun/L3-NOTES.md`. This is the AnkiDroid-based **phone
+> companion** of a CFA Level II exam-prep app: share ONE engine (the fork Rust
+> backend), review the same deck, sync both ways, show the same three scores
+> (Memory/Performance/Readiness) with ranges + give-up. **Honesty rule:** never show
+> a score without evidence; label simulated data `SIMULATED`; AI-off must still
+> score; never fabricate proof. **NO VIDEOS** — capture ordered screenshot sequences
+> + logs.
 
-## Framing & honesty
+## Roles (same as master)
+THE PERFECTIONIST orchestrates; spawn IMPLEMENTER, CRITIC/EVALUATOR (ruthless
+UWorld-grade product designer + QA, harsher each pass), and VERIFIER sub-agents.
 
-This is the **phone companion of a CFA Level II exam-prep app built on AnkiDroid**.
-It must share ONE engine with desktop (the fork Rust backend), review the same
-deck, sync both ways, and show the same three scores (Memory/Performance/
-Readiness) with ranges + the give-up rule. **Honesty rule:** never show a score
-without its evidence; label any simulated data `SIMULATED`; the app must still
-score with AI OFF. Do not fabricate results.
+## Already DONE (do not redo)
+Three scores + ranges + give-up UI; exam-priority via real `col.backend.buildExamQueue`;
+exam-config editor; ethics-pairs deck bundled + AI grading via proxy; Tab-key AI fill;
+nav "Log out / Sync account".
 
-## Global rules
+## PHASE A — mobile features (commit + verify each)
 
-1. **Do NOT run `no-mistakes`.** Add focused unit tests + on-emulator evidence.
-2. **Do NOT commit to `main`/`mobile-logout` directly** — work on your gnhf branch.
-3. Prefer targeted Gradle tasks (`./gradlew :AnkiDroid:testFullDebugUnitTest
-   --tests "*Cfa*"`, `assembleFullDebug`) over full CI.
-4. Every item = committed code + a passing test + evidence under
-   `proof/gnhf-speedrun/L3/`. If blocked, write `BLOCKED: <root cause>` in
-   `proof/gnhf-speedrun/L3-NOTES.md`, cite the closest proof, move on.
-5. Before coding: `git log --oneline -15`; preserve existing user changes.
+- **M1 [P0] Scores from the shared Rust `computeCfaScores` RPC.** Wire
+  `CfaScoresProvider.scores()` to `col.backend.computeCfaScores(...)` (mirror how
+  `CfaExamQueue` calls `col.backend.buildExamQueue`); keep `CfaScorer.compute` as a
+  **fallback only** when the RPC is unavailable; expose a `source` flag
+  (`rpc`/`fallback`). *Verify:* `CfaScoresProviderTest` (RPC path used when backend
+  exposes it) + parity vs Kotlin fallback + logcat `source=rpc`. *Evidence:*
+  `proof/gnhf-speedrun/L3/scores-rpc.txt`. If the fork AAR cannot expose the RPC,
+  keep the fallback, add a parity test vs desktop fixture numbers, mark BLOCKED.
+- **M2 [P0] Device-observable desktop→phone reverse sync.** Root-cause + fix the
+  on-device collection divergence/reset described in
+  `/Users/adarshrajesh/AlphaWeek2/ankiCFA/proof/friday/sync/HANDOFF.md` so a card
+  reviewed on desktop shows on the emulator after sync + cold launch. *Verify:*
+  adb-driven screenshot sequence (review on desktop → sync → phone shows it; revlog
+  counts match) at `proof/gnhf-speedrun/L3/reverse-sync/`. If device-observable
+  capture is impossible, fix what you can, cite the engine-level pytest
+  `/Users/adarshrajesh/AlphaWeek2/ankiCFA/pylib/tests/test_cfa_sync.py`, mark BLOCKED.
+- **M3 [P1] Same-card offline conflict merge (Sunday 7b).** Review the same card on
+  both devices offline, sync, show the conflict rule picks a clear winner; document
+  the rule. *Evidence:* `proof/gnhf-speedrun/L3/conflict-merge.txt` + screenshots.
+- **M4 [P1] Offline-then-sync + AI-off-still-scores.** Verify offline review syncs on
+  reconnect and scores render with AI off. *Evidence:* screenshot sequence + log.
+- **M5 [P2] Packaged phone build (Sunday).** Signed release APK if a keystore is
+  available; else `assembleRelease` unsigned + a BLOCKED note in L3-NOTES.md.
 
-## Already DONE — do not redo
+Targeted tests: `./gradlew :AnkiDroid:testFullDebugUnitTest --tests "*Cfa*"`,
+`assembleFullDebug`.
 
-- Three scores + ranges + give-up UI (`CfaExamReadinessActivity`, `CfaScores.kt`,
-  `CfaScorer.kt`).
-- Exam-priority study via real `col.backend.buildExamQueue` RPC
-  (`CfaExamQueue.kt`) — this proves the fork-AAR RPC path works on device.
-- Exam-config editor, ethics-pairs deck bundled + AI grading via proxy, Tab-key
-  AI fill in the note editor, nav "Log out / Sync account".
+## PHASE B — mobile UI/UX full refactor (final, biggest mobile lift)
 
-## Backlog
+The AnkiDroid CFA UI is the largest UX lift. After Phase A, run the **same
+multi-pass critique loop as the master plan §4** on every mobile screen, to premium
+**UWorld production grade**: ≥3 passes, each more critical, screenshot every screen
++ state via `adb exec-out screencap -p` (navigate with `adb shell am start` /
+`input tap`), critique via GPT-4o vision against the master rubric, log every issue
+in `proof/gnhf-speedrun/mobile-ui/UI-CRITIQUE-LOG.md`, and fix ALL blocker+major
+issues. Build a real theme / styles / Material components + a consistent CFA design
+language (typography, color, spacing, states, motion). Add functional checks that
+each CFA screen renders with real data. Save before/after pairs under
+`proof/gnhf-speedrun/mobile-ui/pass-N/`.
 
-### L3-1 [P0] Serve the three scores from the shared Rust `computeCfaScores` RPC
-- **Why:** Spec: "share the engine, do not rewrite it." Scores currently come from
-  a Kotlin reimplementation (`CfaScorer.compute`) in `CfaScoresProvider.kt`, not
-  the Rust RPC. Exam-priority already calls `col.backend.buildExamQueue` — mirror
-  that exact path for scores.
-- **Do:** Rebuild/point the fork engine AAR so `col.backend.computeCfaScores(...)`
-  is available on device; wire `CfaScoresProvider.scores()` to call it and map the
-  proto response into `CfaScores`. Keep `CfaScorer.compute` as a **fallback only**
-  when the RPC is unavailable; expose a `source` flag (`"rpc"` / `"fallback"`).
-- **Verify:** `CfaScoresProviderTest` asserts the RPC path is used when the backend
-  exposes it; a parity test comparing RPC vs Kotlin-fallback on a fixture; emulator
-  logcat line showing `source=rpc`.
-- **Evidence:** `proof/gnhf-speedrun/L3/scores-rpc.txt` (logcat + parity numbers).
-- **If the AAR rebuild is blocked:** keep the fallback, add a parity unit test vs
-  desktop-produced fixture numbers, and mark `BLOCKED` with the toolchain root cause.
+## Tooling
+- adb: `/opt/homebrew/share/android-commandlinetools/platform-tools/adb`; device
+  `emulator-5554` (AVD `ankidroid_cfa`). Start if down:
+  `/opt/homebrew/share/android-commandlinetools/emulator/emulator @ankidroid_cfa &`.
+- Screenshot: `adb exec-out screencap -p > f.png` (fallback `adb shell screencap -p
+  /sdcard/s.png && adb pull /sdcard/s.png f.png`).
+- Package: `com.ichi2.anki.debug`. Sync server already configured on device
+  (`http://10.0.2.2:27701/`, user `cfa`).
 
-### L3-2 [P0] Device-observable desktop→phone reverse sync
-- **Why:** Friday proof requires "review on the phone, see it on the desktop, **and
-  the reverse**." Per `/Users/adarshrajesh/AlphaWeek2/ankiCFA/proof/friday/sync/HANDOFF.md`, the on-device
-  collection diverges/resets across cold launches, so a desktop review isn't
-  observable on the phone after sync.
-- **Do:** Root-cause the divergence (bootstrap/collection handling in
-  `CfaBootstrap.kt` / `DeckPicker.kt` and any Cfa*Activity collection handling) so
-  synced state survives a normal sync + cold launch. Fix it.
-- **Verify:** adb/emulator recording — review a card on desktop → sync → the phone
-  shows that review (revlog count matches). Steps: connect emulator to the local
-  sync server (`http://10.0.2.2:27701/`, already configured), sync, cold-launch,
-  confirm.
-- **Evidence:** `proof/gnhf-speedrun/L3/reverse-sync.mp4` (or screen frames) +
-  `reverse-sync.txt`. **If device-observable proof is blocked:** fix what you can,
-  document root cause, and cite the desktop engine-level pytest
-  (`/Users/adarshrajesh/AlphaWeek2/ankiCFA/pylib/tests/test_cfa_sync.py`) that proves reverse sync; mark BLOCKED.
-
-## Stop condition
-
-L3-1 and L3-2 each committed with a passing test + an evidence file under
-`proof/gnhf-speedrun/L3/`, OR marked BLOCKED with a root-cause note in
-`proof/gnhf-speedrun/L3-NOTES.md`. Focused `*Cfa*` unit tests green. No faked proof.
+## Stop condition (mobile portion)
+M1–M4 committed with a passing test or captured evidence (M5 best-effort/BLOCKED),
+and ≥3 increasingly-critical mobile UI passes with before/after screenshots and all
+blocker+major issues resolved or documented. Focused `*Cfa*` tests green.
