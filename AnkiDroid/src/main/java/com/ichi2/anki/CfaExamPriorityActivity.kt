@@ -63,8 +63,19 @@ class CfaExamPriorityActivity : AnkiActivity(R.layout.activity_cfa_exam_priority
         val deckName = getString(R.string.cfa_study_priority_deck)
         val existingId = col.decks.idForName(deckName)?.takeIf { col.decks.isFiltered(it) }
         // `cid:` selects exactly the RPC-scored cards; the filtered deck then
-        // orders them weakest-first (retrievability ascending) for the session.
+        // orders them weakest-first for the session.
         val cidSearch = "cid:" + cardIds.joinToString(",")
+
+        // Retrievability ordering is only defined when FSRS is enabled; on an
+        // SM-2 collection it produces an empty `order by` clause (invalid SQL), so
+        // fall back to shortest-interval-first (new cards, then least-known) which
+        // is always valid and approximates the RPC's weakest-first intent.
+        val order =
+            if (col.config.get<Boolean>("fsrs", false) == true) {
+                Deck.Filtered.SearchTerm.Order.RETRIEVABILITY_ASCENDING
+            } else {
+                Deck.Filtered.SearchTerm.Order.INTERVALS_ASCENDING
+            }
 
         val deckData =
             filteredDeckForUpdate {
@@ -82,7 +93,7 @@ class CfaExamPriorityActivity : AnkiActivity(R.layout.activity_cfa_exam_priority
                             searchTerm {
                                 search = cidSearch
                                 limit = cardIds.size
-                                order = Deck.Filtered.SearchTerm.Order.RETRIEVABILITY_ASCENDING
+                                this.order = order
                             },
                         )
                     }
