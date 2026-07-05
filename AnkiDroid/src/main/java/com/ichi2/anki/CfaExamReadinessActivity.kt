@@ -22,6 +22,7 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
+import androidx.core.view.ViewCompat
 import androidx.core.view.setPadding
 import com.google.android.material.button.MaterialButton
 import com.ichi2.anki.CollectionManager.withCol
@@ -29,6 +30,8 @@ import com.ichi2.anki.cfa.CfaScores
 import com.ichi2.anki.cfa.CfaScoresProvider
 import com.ichi2.anki.cfa.HonestScore
 import com.ichi2.anki.cfa.TopicRecall
+import com.ichi2.anki.cfa.scoreCardContentDescription
+import com.ichi2.anki.cfa.topicRowContentDescription
 import kotlin.math.roundToInt
 
 class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readiness) {
@@ -139,6 +142,7 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
                     setTextColor(getColor(R.color.cfa_ink))
                     textSize = 14f
                     layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 }
             val value =
                 TextView(this).apply {
@@ -151,7 +155,12 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
                     setTextColor(if (topic.covered) getColor(R.color.cfa_navy) else getColor(R.color.cfa_muted))
                     textSize = 14f
                     gravity = Gravity.END
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 }
+            // WCAG 1.3.1 / 4.1.2 (Phase B Pass-3 M-P3-2): announce the topic name
+            // together with its recall as ONE screen-reader node, not two swipes.
+            row.contentDescription = topicRowContentDescription(topic)
+            ViewCompat.setScreenReaderFocusable(row, true)
             row.addView(name)
             row.addView(value)
             container.addView(row)
@@ -181,12 +190,19 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
                         ).apply { bottomMargin = dp(8) }
             }
 
+        // WCAG 1.3.1 / 4.1.2 (Phase B Pass-3 M-P3-2): the label / value / range
+        // are separate TextViews, so announce the card as ONE screen-reader node
+        // with a coherent contentDescription instead of three fragments.
+        card.contentDescription = scoreCardContentDescription(label, score, abstainOverride)
+        ViewCompat.setScreenReaderFocusable(card, true)
+
         card.addView(
             TextView(this).apply {
                 text = label.uppercase()
                 setTextColor(getColor(R.color.cfa_muted))
                 textSize = 12f
                 letterSpacing = 0.08f
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             },
         )
 
@@ -200,6 +216,7 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
                     setTextColor(getColor(R.color.cfa_muted))
                     textSize = if (hero) 22f else 18f
                     setPadding(0, dp(2), 0, 0)
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 },
             )
             card.addView(
@@ -208,6 +225,7 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
                     setTextColor(getColor(R.color.cfa_muted))
                     textSize = 13f
                     setPadding(0, dp(4), 0, 0)
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 },
             )
         } else {
@@ -218,6 +236,7 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
                     textSize = if (hero) 32f else 22f
                     setTypeface(typeface, android.graphics.Typeface.BOLD)
                     setPadding(0, dp(2), 0, 0)
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 },
             )
             card.addView(
@@ -226,6 +245,7 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
                     setTextColor(getColor(R.color.cfa_muted))
                     textSize = 13f
                     setPadding(0, dp(2), 0, 0)
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 },
             )
         }
