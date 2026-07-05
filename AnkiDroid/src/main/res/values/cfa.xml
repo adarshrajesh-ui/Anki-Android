@@ -50,6 +50,29 @@
     <color name="cfa_ink">#122B46</color>
     <color name="cfa_muted">#4D5C6D</color>
 
+    <!--
+      Reviewer ease-answer button fills (Phase B mobile Reviewer sweep). The four
+      answer buttons — the highest-time-on-screen surface — shipped in raw stock
+      Material colours (again=material_red, hard=material_blue_grey, good=material_green,
+      easy=material_light_blue_500, the exact stock light-blue leak the objective
+      flags as "ugly"). These CFA-palette replacements give the four tiers one
+      on-brand four-tier scheme: fail-red / neutral-slate / pass-green / navy
+      (rising confidence), matching the desktop reviewer answer bar's CFA identity.
+      Every base fill clears WCAG AA (>=4.5:1) with the white answerButtonText:
+      fail 5.8:1 / slate 6.9:1 / good-green (darkened from cfa_pass for AA) 6.4:1 /
+      navy 15:1. The _hover shades back the pressed/focused states. Shared by the
+      light AND dark reviewer drawables so the ease buttons read identically in
+      both themes.
+    -->
+    <color name="cfa_ease_again">#B91C1C</color>
+    <color name="cfa_ease_again_hover">#8F1414</color>
+    <color name="cfa_ease_hard">#4D5C6D</color>
+    <color name="cfa_ease_hard_hover">#3A4653</color>
+    <color name="cfa_ease_good">#0F6E33</color>
+    <color name="cfa_ease_good_hover">#0B5527</color>
+    <color name="cfa_ease_easy">#122B46</color>
+    <color name="cfa_ease_easy_hover">#0E2238</color>
+
     <!-- Nav drawer / branding. Not translated (feature in progress). -->
     <string name="cfa_brand_eyebrow">ANKICFA · CFA LEVEL II</string>
     <string name="cfa_brand_wordmark">ankiCFA</string>

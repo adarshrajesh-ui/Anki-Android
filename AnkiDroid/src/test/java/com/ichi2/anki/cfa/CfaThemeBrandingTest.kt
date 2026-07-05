@@ -18,8 +18,9 @@
 // This guard parses the theme XMLs as text and asserts each retoned attribute
 // now references a CFA token (and NOT the specific stock light-blue it used to),
 // so a regression that re-introduces a stock-blue leak fails the build. The
-// semantic learned colours (ease buttons, flags) are intentionally NOT asserted
-// here — they keep their learned Anki affordance.
+// reviewer ease buttons are now CFA-branded too, but their drawable fills are
+// guarded separately in CfaReviewerEaseButtonsTest; the card flags keep their
+// learned Anki affordance and are intentionally NOT asserted here.
 
 package com.ichi2.anki.cfa
 
