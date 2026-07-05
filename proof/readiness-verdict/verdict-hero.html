@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  Faithful mock of the mobile Exam Readiness VERDICT HERO added in this iteration.
+  Reproduces the EXACT copy, CFA colour tokens (values/cfa.xml) and relative text
+  sizes the Kotlin `verdictHero()` renders, so the two states can be seen without
+  an emulator. The numbers shown are the shared-engine values the RPC/on-device
+  port agree on (proven by CfaScoresProviderTest's Bayesian parity assertions).
+-->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { margin: 0; background: #F4F1EC; font-family: -apple-system, Segoe UI, Roboto, sans-serif; }
+      .wrap { max-width: 420px; margin: 0 auto; padding: 20px; }
+      .h { font-size: 13px; letter-spacing: 0.5px; color: #4D5C6D; text-transform: uppercase; margin: 0 0 6px; }
+      /* cfa_score_card_bg: white surface, hairline, 8px radius */
+      .card { background: #fff; border: 1px solid #E4DFD6; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+      .eyebrow { font-size: 12px; letter-spacing: 0.96px; color: #4D5C6D; text-transform: uppercase; }
+      .call { font-size: 28px; font-weight: 700; padding-top: 4px; }
+      .pass { color: #15803D; }
+      .fail { color: #B91C1C; }
+      .abstain { color: #B45309; font-size: 22px; font-weight: 400; padding-top: 4px; }
+      .p { font-size: 14px; color: #4D5C6D; padding-top: 2px; }
+      .lead { font-size: 14px; color: #122B46; padding-top: 10px; }
+      .note { font-size: 12px; color: #4D5C6D; padding-top: 8px; }
+      .stat { display: flex; justify-content: space-between; margin-bottom: 8px; }
+      .stat .lbl { font-size: 12px; letter-spacing: 0.96px; color: #4D5C6D; text-transform: uppercase; }
+      .stat .val { font-size: 22px; color: #122B46; font-weight: 700; }
+      .stat .rng { font-size: 13px; color: #4D5C6D; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="h">State A — enough evidence → Bayesian pass/fail call (never abstains)</p>
+      <div class="card">
+        <div class="eyebrow">EXAM READINESS</div>
+        <div class="call pass">Likely pass</div>
+        <div class="p">p = 0.82</div>
+        <div class="lead">Estimated exam-weighted accuracy 71% (95% CI 62%–80%) vs ~65% MPS proxy · est. recall 88%</div>
+        <div class="note">312 first-seen · 8/10 topics studied · not validated against real exam data</div>
+      </div>
+      <div class="card">
+        <div class="stat"><span class="lbl">MEMORY</span><span class="val">84%</span></div>
+        <div class="rng" style="font-size:13px;color:#4D5C6D">range 77% – 91%</div>
+      </div>
+
+      <p class="h">State B — insufficient evidence → honest abstain (matches desktop)</p>
+      <div class="card">
+        <div class="eyebrow">EXAM READINESS</div>
+        <div class="abstain">Not enough data — keep studying</div>
+        <div class="note">No pass/fail call yet — the estimate stays hidden until there is enough graded review evidence to be honest. Keep studying — the Memory and Performance scores below need more data first. · not validated against real exam data</div>
+      </div>
+    </div>
+  </body>
+</html>

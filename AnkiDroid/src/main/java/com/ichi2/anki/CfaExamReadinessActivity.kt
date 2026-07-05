@@ -89,26 +89,15 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
 
         val container = findViewById<LinearLayout>(R.id.cfa_scores_container)
         container.removeAllViews()
-        // When BOTH inputs are still awaiting data the shared engine's readiness reason is a
-        // verbatim concatenation of the memory + performance reasons shown on the two cards
-        // below (and in the evidence caption), so the hero would repeat the same counts three
-        // times. Give the hero a concise composite line instead — the specifics stay below.
-        val heroAbstainOverride =
-            if (scores.memory.abstain && scores.performance.abstain) {
-                getString(R.string.cfa_readiness_abstain_hint)
-            } else {
-                null
-            }
-        container.addView(
-            scoreCard(
-                getString(R.string.cfa_readiness_readiness),
-                scores.readiness,
-                hero = true,
-                abstainOverride = heroAbstainOverride,
-            ),
-        )
+        // Lead with the Bayesian pass/fail VERDICT hero (the signature Readiness
+        // call, matching the desktop page) — but ABSTAIN when either Memory or
+        // Performance gives up, the exact same gate the desktop uses
+        // (memory.abstain || performance.abstain). Below it sit the three honest
+        // StatCards (Memory / Performance / Readiness).
+        container.addView(verdictHero(scores))
         container.addView(scoreCard(getString(R.string.cfa_readiness_memory), scores.memory))
         container.addView(scoreCard(getString(R.string.cfa_readiness_performance), scores.performance))
+        container.addView(scoreCard(getString(R.string.cfa_readiness_readiness), scores.readiness))
 
         // Evidence caption under the score cards.
         val evidence =
@@ -165,6 +154,130 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
             row.addView(value)
             container.addView(row)
         }
+    }
+
+    /**
+     * The verdict hero card: the Bayesian pass/fail call (never abstains) when
+     * there is enough Memory + Performance evidence, or a calm "keep studying"
+     * abstain state otherwise — mirroring the desktop Exam Readiness hero.
+     */
+    private fun verdictHero(scores: CfaScores): View {
+        val card =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(16))
+                setBackgroundResource(R.drawable.cfa_score_card_bg)
+                layoutParams =
+                    LinearLayout
+                        .LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        ).apply { bottomMargin = dp(12) }
+            }
+
+        val eyebrow =
+            TextView(this).apply {
+                text = getString(R.string.cfa_readiness_verdict_eyebrow).uppercase()
+                setTextColor(getColor(R.color.cfa_muted))
+                textSize = 12f
+                letterSpacing = 0.08f
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }
+        card.addView(eyebrow)
+
+        val bayes = scores.bayesian
+        // Same abstain gate as the desktop hero (memory.abstain || performance.abstain).
+        val heroAbstain = scores.memory.abstain || scores.performance.abstain
+
+        if (heroAbstain || bayes == null) {
+            val reason =
+                if (scores.memory.abstain && scores.performance.abstain) {
+                    getString(R.string.cfa_readiness_abstain_hint)
+                } else if (scores.memory.abstain) {
+                    scores.memory.reason
+                } else {
+                    scores.performance.reason
+                }
+            card.addView(
+                TextView(this).apply {
+                    text = getString(R.string.cfa_readiness_verdict_abstain)
+                    setTextColor(getColor(R.color.cfa_warn))
+                    textSize = 22f
+                    setPadding(0, dp(4), 0, 0)
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                },
+            )
+            card.addView(
+                TextView(this).apply {
+                    text = getString(R.string.cfa_readiness_verdict_abstain_note, reason, getString(R.string.cfa_readiness_not_validated))
+                    setTextColor(getColor(R.color.cfa_muted))
+                    textSize = 13f
+                    setPadding(0, dp(6), 0, 0)
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                },
+            )
+            card.contentDescription =
+                getString(R.string.cfa_readiness_verdict_abstain) + ". " +
+                getString(R.string.cfa_readiness_verdict_abstain_note, reason, getString(R.string.cfa_readiness_not_validated))
+            ViewCompat.setScreenReaderFocusable(card, true)
+            return card
+        }
+
+        // Bayesian call: headline + supporting probability + accuracy band.
+        val call = bayes.call.replaceFirstChar { it.uppercase() }
+        val callColor = if (bayes.passed) R.color.cfa_pass else R.color.cfa_fail
+        card.addView(
+            TextView(this).apply {
+                text = call
+                setTextColor(getColor(callColor))
+                textSize = 28f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setPadding(0, dp(4), 0, 0)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            },
+        )
+        card.addView(
+            TextView(this).apply {
+                text = "p = ${"%.2f".format(bayes.callProb)}"
+                setTextColor(getColor(R.color.cfa_muted))
+                textSize = 14f
+                setPadding(0, dp(2), 0, 0)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            },
+        )
+        val recallText =
+            if (bayes.recall != null) {
+                " · est. recall ${pct(bayes.recall)}"
+            } else {
+                ""
+            }
+        val lead =
+            "Estimated exam-weighted accuracy ${pct(bayes.accuracy)} " +
+                "(95% CI ${pct(bayes.ciLow)}–${pct(bayes.ciHigh)}) vs ~${pct(bayes.mps)} MPS proxy$recallText"
+        card.addView(
+            TextView(this).apply {
+                text = lead
+                setTextColor(getColor(R.color.cfa_ink))
+                textSize = 14f
+                setPadding(0, dp(10), 0, 0)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            },
+        )
+        val note =
+            "${bayes.firstExposures} first-seen · " +
+                "${bayes.topicsCovered}/${bayes.topicsTotal} topics studied · ${bayes.label}"
+        card.addView(
+            TextView(this).apply {
+                text = note
+                setTextColor(getColor(R.color.cfa_muted))
+                textSize = 12f
+                setPadding(0, dp(8), 0, 0)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            },
+        )
+        card.contentDescription = "$call. p ${"%.2f".format(bayes.callProb)}. $lead. $note"
+        ViewCompat.setScreenReaderFocusable(card, true)
+        return card
     }
 
     /** A card showing one honest score: its range (or abstain text) + a bar. */

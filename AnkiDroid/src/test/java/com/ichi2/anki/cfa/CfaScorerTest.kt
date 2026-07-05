@@ -81,6 +81,39 @@ class CfaScorerTest : RobolectricTest() {
     }
 
     /**
+     * The Bayesian verdict NEVER abstains: a fresh collection still yields a
+     * well-formed pass/fail call (very wide band, "likely fail" against the MPS),
+     * and it is a consistent, in-range band once evidence accrues.
+     */
+    @Test
+    fun `bayesian verdict never abstains and is a well-formed band`() {
+        // Fresh: no evidence -> a call is still made, and it is internally coherent.
+        val fresh = CfaScorer.compute(col).bayesian!!
+        assertThat(fresh.call, equalTo("likely fail"))
+        assertThat(fresh.passed, equalTo(false))
+        assertThat(fresh.callProb, greaterThanOrEqualTo(0.5))
+        assertThat(fresh.firstExposures, equalTo(0))
+        assertThat(fresh.mps, equalTo(0.65))
+        assertThat(fresh.label, containsString("not validated"))
+
+        seedReviewedCards(
+            topics = listOf("ethics", "quant", "econ", "fra", "corp", "equity"),
+            cardsPerTopic = 6,
+            reviewsPerCard = 6,
+        )
+        val b = CfaScorer.compute(col).bayesian!!
+        // Band is ordered and in [0,1]; the call agrees with which side of 0.5 p_pass is.
+        assertThat(b.ciLow, lessThanOrEqualTo(b.accuracy))
+        assertThat(b.accuracy, lessThanOrEqualTo(b.ciHigh))
+        assertThat(b.ciLow, greaterThanOrEqualTo(0.0))
+        assertThat(b.ciHigh, lessThanOrEqualTo(1.0))
+        assertThat(b.callProb, greaterThanOrEqualTo(0.5))
+        assertThat(b.callProb, lessThanOrEqualTo(1.0))
+        assertThat(b.firstExposures, greaterThan(0))
+        assertThat(b.recall!!, greaterThan(0.0))
+    }
+
+    /**
      * Add [cardsPerTopic] cards for each of [topics] (tagged `los::<topic>::…`),
      * each with FSRS memory state and [reviewsPerCard] graded revlog rows. ~80%
      * of first exposures are correct so Performance is a non-degenerate Wilson band.

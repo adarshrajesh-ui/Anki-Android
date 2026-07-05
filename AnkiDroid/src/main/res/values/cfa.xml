@@ -75,6 +75,12 @@
     <string name="cfa_readiness_abstain_hint">Keep studying — the Memory and Performance scores below need more data first.</string>
     <string name="cfa_readiness_source_fallback">Source: on-device (deterministic)</string>
     <string name="cfa_readiness_source_rpc">Source: shared engine</string>
+    <!-- Bayesian pass/fail VERDICT hero (matches the desktop Exam Readiness hero). -->
+    <string name="cfa_readiness_verdict_eyebrow">Exam readiness</string>
+    <string name="cfa_readiness_verdict_abstain">Not enough data — keep studying</string>
+    <!-- %1$s = the give-up reason; %2$s = the standing "not validated" caveat. -->
+    <string name="cfa_readiness_verdict_abstain_note">No pass/fail call yet — the estimate stays hidden until there is enough graded review evidence to be honest. %1$s · %2$s</string>
+    <string name="cfa_readiness_not_validated">not validated against real exam data</string>
 
     <!-- Exam config editor. -->
     <string name="cfa_exam_config_title">Exam configuration</string>

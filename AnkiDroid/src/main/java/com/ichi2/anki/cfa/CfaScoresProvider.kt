@@ -94,8 +94,25 @@ object CfaScoresProvider {
             gradedReviews = mem.gradedReviews,
             firstExposures = perf.firstExposures,
             source = CfaScores.SOURCE_RPC,
+            bayesian = resp.bayesian.toVerdict(),
         )
     }
+
+    private fun anki.scheduler.CfaBayesianReadiness.toVerdict(): BayesianVerdict =
+        BayesianVerdict(
+            call = call,
+            callProb = callProb,
+            passed = call == "likely pass",
+            accuracy = accuracy,
+            ciLow = ciLow,
+            ciHigh = ciHigh,
+            mps = mps,
+            recall = if (hasRecall()) recall else null,
+            firstExposures = firstExposures,
+            topicsCovered = topicsCovered,
+            topicsTotal = topicsTotal,
+            label = label,
+        )
 
     private fun anki.scheduler.CfaMemoryScore.toHonest(): HonestScore =
         HonestScore(

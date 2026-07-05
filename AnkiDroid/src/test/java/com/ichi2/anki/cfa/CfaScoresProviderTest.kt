@@ -50,6 +50,14 @@ class CfaScoresProviderTest : RobolectricTest() {
 
         // Same canonical topic list on both engines.
         assertThat(provided.topicsTotal, equalTo(fallback.topicsTotal))
+
+        // The Bayesian verdict NEVER abstains (even on a fresh collection) and
+        // agrees across the RPC and the on-device port. With no evidence the band
+        // is very wide, so it should read "likely fail" against the MPS proxy.
+        assertBayesianClose(provided.bayesian, fallback.bayesian)
+        val providedBayes = provided.bayesian!!
+        assertThat(providedBayes.call, equalTo("likely fail"))
+        assertThat(providedBayes.firstExposures, equalTo(0))
     }
 
     /**
@@ -89,6 +97,15 @@ class CfaScoresProviderTest : RobolectricTest() {
         assertScoreClose(rpc.performance, fb.performance)
         assertScoreClose(rpc.readiness, fb.readiness)
 
+        // The Bayesian verdict hero also agrees across the shared Rust engine and
+        // the on-device Kotlin port — proving desktop == phone on the pass/fail
+        // call, the accuracy band and the exam-weighted recall.
+        assertBayesianClose(rpc.bayesian, fb.bayesian)
+        val rpcBayes = rpc.bayesian!!
+        val fbBayes = fb.bayesian!!
+        assertThat(rpcBayes.call, equalTo(fbBayes.call))
+        assertThat(rpcBayes.passed, equalTo(fbBayes.passed))
+
         // Every score is still a well-formed range in [0,1].
         for (s in listOf(rpc.memory, rpc.performance, rpc.readiness)) {
             val low = s.rangeLow!!
@@ -110,6 +127,31 @@ class CfaScoresProviderTest : RobolectricTest() {
             assertThat(a.point!!, closeTo(b.point!!, 1e-6))
             assertThat(a.rangeLow!!, closeTo(b.rangeLow!!, 1e-6))
             assertThat(a.rangeHigh!!, closeTo(b.rangeHigh!!, 1e-6))
+        }
+    }
+
+    private fun assertBayesianClose(
+        a: BayesianVerdict?,
+        b: BayesianVerdict?,
+    ) {
+        assertThat("RPC bayesian present", a != null, equalTo(true))
+        assertThat("fallback bayesian present", b != null, equalTo(true))
+        // accuracy / CI are exact beta math on both engines; p_pass uses erf
+        // (exact in Rust, an A&S approximation in Kotlin) so it gets a looser bound.
+        assertThat(a!!.accuracy, closeTo(b!!.accuracy, 1e-6))
+        assertThat(a.ciLow, closeTo(b.ciLow, 1e-6))
+        assertThat(a.ciHigh, closeTo(b.ciHigh, 1e-6))
+        assertThat(a.mps, closeTo(b.mps, 1e-9))
+        assertThat(a.callProb, closeTo(b.callProb, 1e-4))
+        assertThat(a.topicsCovered, equalTo(b.topicsCovered))
+        assertThat(a.topicsTotal, equalTo(b.topicsTotal))
+        assertThat(a.firstExposures, equalTo(b.firstExposures))
+        val aRecall = a.recall
+        val bRecall = b.recall
+        if (aRecall != null && bRecall != null) {
+            assertThat(aRecall, closeTo(bRecall, 1e-6))
+        } else {
+            assertThat(aRecall, equalTo(bRecall))
         }
     }
 
