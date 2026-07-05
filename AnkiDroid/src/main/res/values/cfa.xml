@@ -56,6 +56,8 @@
     <string name="cfa_brand_tagline">CFA Level II · Exam Prep</string>
     <string name="cfa_nav_exam_readiness" comment="Nav-drawer menu entry that opens the Exam Readiness screen; same words as its screen title but a distinct menu string" maxLength="28">Exam Readiness</string>
     <string name="cfa_title_exam_readiness" comment="Action-bar title of the Exam Readiness screen; same words as the nav-drawer entry but a distinct title string">Exam Readiness</string>
+    <string name="cfa_nav_concept_map" comment="Nav-drawer menu entry that opens the Concept Map (radial mastery map) screen" maxLength="28">Concept Map</string>
+    <string name="cfa_title_concept_map" comment="Action-bar title of the Concept Map screen">Concept Map</string>
     <!-- Log out entry (under Statistics): opens the sync account screen (Log out when logged in, Log in otherwise). -->
     <string name="cfa_nav_sync_account" maxLength="28">Log out</string>
 

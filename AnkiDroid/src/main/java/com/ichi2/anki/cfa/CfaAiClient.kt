@@ -12,6 +12,7 @@
 package com.ichi2.anki.cfa
 
 import com.ichi2.anki.libanki.Collection
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.net.HttpURLConnection
@@ -26,6 +27,42 @@ data class CfaAiResult(
     val text: String,
     val target: String?,
     val source: String,
+    val model: String?,
+    val error: String?,
+)
+
+/** Per-gold-span verdict inside a semantic ethics grade. */
+data class CfaGradeSpan(
+    val phrase: String,
+    val matched: Boolean,
+    val note: String,
+)
+
+/**
+ * One semantic ethics-grade result from the proxy (`POST /cfa/grade`). Mirrors
+ * the desktop `cfa/ethics_pairs/ai_grading.grade_semantic` contract exactly so
+ * the phone renders the SAME partial-credit tiers, cited Standard, and personal
+ * coaching. [source] is "ai" on a real semantic grade, "fallback" whenever the
+ * proxy degraded (AI off, no key, network/parse error) — the card template's own
+ * deterministic grade stays authoritative in that case.
+ *
+ * [grade] is one of "correct" | "somewhat" | "partial" | "wrong". [standard] is
+ * the governing CFA Standard code+name the grader cites (echoed even on
+ * fallback). [confidence] is null when the model did not report one.
+ */
+data class CfaGradeResult(
+    val ok: Boolean,
+    val source: String,
+    val grade: String,
+    val verdictCorrect: Boolean,
+    val correct: Boolean,
+    val explanation: String,
+    val coaching: String,
+    val studyTip: String,
+    val confidence: Double?,
+    val standard: String,
+    val itemId: String,
+    val perSpan: List<CfaGradeSpan>,
     val model: String?,
     val error: String?,
 )
@@ -99,6 +136,145 @@ object CfaAiClient {
         } catch (e: Exception) {
             CfaAiResult(false, "", null, "fallback", null, "client_error:${e.javaClass.simpleName}")
         }
+    }
+
+    /**
+     * Semantic ethics grade via the proxy configured in [col]. Sends the passage,
+     * the correct + learner verdicts, the authored gold evidence spans, and the
+     * learner's highlighted phrases; the server grades SEMANTICALLY (meaning, not
+     * exact wording) and returns partial-credit tiers + cited Standard + personal
+     * coaching. Never throws — see [grade] below.
+     */
+    fun grade(
+        col: Collection,
+        passage: String,
+        answerVerdict: String,
+        judgedVerdict: String,
+        goldSpans: List<Pair<String, String>>,
+        learnerSpans: List<String>,
+        itemId: String = "",
+        standard: String = "",
+        poster: CfaHttpPost = DEFAULT_POST,
+    ): CfaGradeResult =
+        grade(
+            proxyUrl(col),
+            proxyToken(col),
+            passage,
+            answerVerdict,
+            judgedVerdict,
+            goldSpans,
+            learnerSpans,
+            itemId,
+            standard,
+            poster,
+        )
+
+    /**
+     * Pure overload: POST the attempt to `/cfa/grade` at [baseUrl] and parse the
+     * result. On any failure (non-200, exception) this returns a `source ==
+     * "fallback"` result with [error] set and no AI text, so the card keeps its
+     * own deterministic grade and the UI honestly says AI was unavailable. Never
+     * throws.
+     */
+    @Suppress("LongParameterList")
+    fun grade(
+        baseUrl: String,
+        token: String,
+        passage: String,
+        answerVerdict: String,
+        judgedVerdict: String,
+        goldSpans: List<Pair<String, String>>,
+        learnerSpans: List<String>,
+        itemId: String,
+        standard: String,
+        poster: CfaHttpPost,
+    ): CfaGradeResult {
+        val gold = JSONArray()
+        for ((phrase, rationale) in goldSpans) {
+            gold.put(JSONObject().put("phrase", phrase).put("rationale", rationale))
+        }
+        val learner = JSONArray()
+        for (p in learnerSpans) learner.put(p)
+        val body =
+            JSONObject()
+                .put("passage", passage)
+                .put("answerVerdict", answerVerdict)
+                .put("judgedVerdict", judgedVerdict)
+                .put("goldSpans", gold)
+                .put("learnerSpans", learner)
+                .put("itemId", itemId)
+                .put("standard", standard)
+                .toString()
+        return try {
+            val (status, resp) = poster.post("${baseUrl.trimEnd('/')}/cfa/grade", token, body)
+            if (status != 200) {
+                return fallbackGrade(standard, itemId, "http_$status")
+            }
+            parseGrade(JSONObject(resp), standard, itemId)
+        } catch (e: Exception) {
+            fallbackGrade(standard, itemId, "client_error:${e.javaClass.simpleName}")
+        }
+    }
+
+    /** A client-side fallback grade (network/parse failure) — no AI text, honest error. */
+    private fun fallbackGrade(
+        standard: String,
+        itemId: String,
+        error: String,
+    ) = CfaGradeResult(
+        ok = false,
+        source = "fallback",
+        grade = "",
+        verdictCorrect = false,
+        correct = false,
+        explanation = "",
+        coaching = "",
+        studyTip = "",
+        confidence = null,
+        standard = standard,
+        itemId = itemId,
+        perSpan = emptyList(),
+        model = null,
+        error = error,
+    )
+
+    /** Parse a `/cfa/grade` JSON body (snake_case result keys) into [CfaGradeResult]. */
+    private fun parseGrade(
+        o: JSONObject,
+        fallbackStandard: String,
+        fallbackItemId: String,
+    ): CfaGradeResult {
+        val spans = mutableListOf<CfaGradeSpan>()
+        val arr = o.optJSONArray("per_span")
+        if (arr != null) {
+            for (i in 0 until arr.length()) {
+                val s = arr.optJSONObject(i) ?: continue
+                spans.add(
+                    CfaGradeSpan(
+                        phrase = s.optString("phrase", ""),
+                        matched = s.optBoolean("matched", false),
+                        note = s.optString("note", ""),
+                    ),
+                )
+            }
+        }
+        val confidence = if (o.isNull("confidence")) null else o.optDouble("confidence").takeIf { !it.isNaN() }
+        return CfaGradeResult(
+            ok = o.optBoolean("ok", false),
+            source = o.optString("source", "fallback"),
+            grade = o.optString("grade", ""),
+            verdictCorrect = o.optBoolean("verdict_correct", false),
+            correct = o.optBoolean("correct", false),
+            explanation = o.optString("explanation", ""),
+            coaching = o.optString("coaching", ""),
+            studyTip = o.optString("study_tip", ""),
+            confidence = confidence,
+            standard = o.optString("standard", "").ifBlank { fallbackStandard },
+            itemId = o.optString("item_id", "").ifBlank { fallbackItemId },
+            perSpan = spans,
+            model = o.optString("model", "").ifBlank { null },
+            error = o.optString("error", "").ifBlank { null },
+        )
     }
 
     /** Default HTTP POST via HttpURLConnection (no extra dependency). */

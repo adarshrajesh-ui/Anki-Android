@@ -10,6 +10,11 @@
             android:id="@+id/nav_cfa_readiness"
             android:icon="@drawable/ic_cfa_readiness"
             android:title="@string/cfa_nav_exam_readiness" />
+        <!-- CFA fork: the Concept Map (radial mastery map), identical on phone & desktop. -->
+        <item
+            android:id="@+id/nav_cfa_concept_map"
+            android:icon="@drawable/ic_cfa_concept_map"
+            android:title="@string/cfa_nav_concept_map" />
         <item
             android:id="@+id/nav_decks"
             android:icon="@drawable/ic_list_black" />

@@ -350,6 +350,11 @@ abstract class NavigationDrawerActivity(
                         startActivity(CfaExamReadinessActivity.getIntent(this@NavigationDrawerActivity))
                     }
 
+                    R.id.nav_cfa_concept_map -> {
+                        Timber.i("Navigating to CFA Concept Map")
+                        startActivity(CfaConceptMapActivity.getIntent(this@NavigationDrawerActivity))
+                    }
+
                     R.id.nav_cfa_sync_account -> {
                         Timber.i("Navigating to sync account screen")
                         startActivity(AccountActivity.getIntent(this@NavigationDrawerActivity))

@@ -1,0 +1,108 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// CFA fork — Concept Map screen (headline Feature 5, mobile side).
+//
+// The Concept Map is the radial "mastery map" tab, meant to be IDENTICAL on
+// phone and desktop. It renders the SAME self-contained SVG/JS asset the desktop
+// concept-map page is built from (assets/cfa/concept_map.html, matching the
+// approved spec .lavish/concept-map-spec.html), in a WebView. The learner's REAL
+// per-topic mastery is computed by the shared readiness engine
+// ([CfaScoresProvider]) and injected as `window.CFA_MAP_DATA` before the map
+// draws, so node FILL reflects the same numbers the Exam Readiness screen shows
+// (and the honest give-up/abstain rule stays intact — uncovered topics render
+// gray). Pinch-zoom is enabled via the WebView's built-in zoom controls.
+//
+// Additive: it opens from the CFA nav-drawer entry and never touches
+// FSRS / scheduling / sync state.
+
+package com.ichi2.anki
+
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.os.Bundle
+import android.view.MenuItem
+import android.webkit.WebView
+import androidx.appcompat.widget.Toolbar
+import com.ichi2.anki.CollectionManager.withCol
+import com.ichi2.anki.cfa.CfaConceptMap
+import com.ichi2.anki.cfa.CfaScoresProvider
+import org.json.JSONObject
+import timber.log.Timber
+
+class CfaConceptMapActivity : AnkiActivity(R.layout.activity_cfa_concept_map) {
+    private lateinit var webView: WebView
+
+    @SuppressLint("SetJavaScriptEnabled")
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (showedActivityFailedScreen(savedInstanceState)) {
+            return
+        }
+        val toolbar = findViewById<Toolbar>(R.id.cfa_toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            title = getString(R.string.cfa_title_concept_map)
+        }
+
+        webView = findViewById(R.id.cfa_concept_web)
+        webView.settings.apply {
+            javaScriptEnabled = true
+            // Pinch-zoom on phone (objective: "pinch-zoom on phone"), without the
+            // legacy on-screen zoom buttons.
+            builtInZoomControls = true
+            displayZoomControls = false
+            useWideViewPort = true
+            loadWithOverviewMode = true
+        }
+        loadMap()
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            finish()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    /**
+     * Compute the real per-topic mastery off the main thread, then load the
+     * self-contained asset with the data injected as `window.CFA_MAP_DATA` so the
+     * map draws from it on first paint (no flash of the empty/abstain state).
+     */
+    private fun loadMap() {
+        launchCatchingTask {
+            val payload =
+                try {
+                    val scores = withCol { CfaScoresProvider.scores(this) }
+                    CfaConceptMap.buildPayload(scores)
+                } catch (e: Exception) {
+                    // Honest empty state: an all-gray (abstaining) map still renders.
+                    Timber.w(e, "CFA concept-map score load failed; rendering abstain state")
+                    JSONObject()
+                        .put("slugs", JSONObject())
+                        .put("overall", JSONObject.NULL)
+                        .put("source", "unavailable")
+                        .toString()
+                }
+            // The asset reads window.CFA_MAP_DATA synchronously when its <script>
+            // runs, so inject the data as a page-level global BEFORE that script by
+            // prepending a tiny setter to the first <script> tag. loadDataWithBaseURL
+            // keeps the file:// base so any relative asset refs still resolve.
+            val html = assets.open("cfa/concept_map.html").bufferedReader().use { it.readText() }
+            val injected = html.replaceFirst("<script>", "<script>window.CFA_MAP_DATA=$payload;</script>\n<script>")
+            webView.loadDataWithBaseURL(
+                "file:///android_asset/cfa/",
+                injected,
+                "text/html",
+                "utf-8",
+                null,
+            )
+        }
+    }
+
+    companion object {
+        fun getIntent(from: android.content.Context): Intent = Intent(from, CfaConceptMapActivity::class.java)
+    }
+}
