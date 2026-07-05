@@ -96,4 +96,61 @@ class CfaThemeBrandingTest {
         // The stock light-blue FAB the dark theme used to ship must be gone.
         assertThat(xml, not(containsString("material_light_blue_700")))
     }
+
+    // Dark mode uses the brand's warm accent-on-navy as the interactive tint
+    // (navy is too dark to read on a #303030 / black surface); it clears WCAG AA
+    // there (5.25:1 on #303030, 8.4:1 on black). The DARK-surface roles use the
+    // bright accent-on-navy; the LIGHT-surface snackbar uses the brand navy.
+    @Test
+    fun dark_theme_interactive_tints_are_cfa_branded_not_stock_blue() {
+        val xml = themeXml("theme_dark.xml")
+
+        // Primary/accent tints (switches, checkboxes, activated widgets, links).
+        assertThat(attrValue(xml, "colorPrimary"), equalTo("@color/cfa_accent_on_navy"))
+        assertThat(attrValue(xml, "colorAccent"), equalTo("@color/cfa_accent_on_navy"))
+
+        // Tonal + elevated surfaces (selected chips, sheets) — navy container and a
+        // 6% navy elevated tint replacing the stock blue-grey / 6% blue.
+        assertThat(attrValue(xml, "colorSecondaryContainer"), equalTo("@color/cfa_navy"))
+        assertThat(attrValue(xml, "colorSurfaceContainer"), equalTo("#0F122B46"))
+
+        // Tab / deck-list / count accents on the grey surface.
+        assertThat(attrValue(xml, "tabActiveIconColor"), equalTo("@color/cfa_accent_on_navy"))
+        assertThat(attrValue(xml, "dynDeckColor"), equalTo("@color/cfa_accent_on_navy"))
+        assertThat(attrValue(xml, "newCountColor"), equalTo("@color/cfa_accent_on_navy"))
+
+        // Editor selection (navy on dark), and the action-button text keyed to its
+        // own surface: navy on the LIGHT snackbar, warm accent on the DARK dialog.
+        assertThat(attrValue(xml, "editTextHighlightColor"), equalTo("@color/cfa_navy"))
+        assertThat(attrValue(xml, "snackbarButtonTextColor"), equalTo("@color/cfa_navy"))
+        assertThat(attrValue(xml, "progressDialogButtonTextColor"), equalTo("@color/cfa_accent_on_navy"))
+
+        // The specific stock blues these replaced must be gone. material_blue_400
+        // (colorPrimary/accent) and the light-blue tints are asserted absent; the
+        // semantic ease-button blues are NOT referenced by this theme, so a blanket
+        // check is safe here for the ones we retoned.
+        assertThat(xml, not(containsString("material_blue_400")))
+        assertThat(xml, not(containsString("material_indigo_200")))
+        assertThat(xml, not(containsString("material_light_blue_500")))
+    }
+
+    @Test
+    fun black_theme_interactive_tints_are_cfa_branded_not_stock_blue() {
+        val xml = themeXml("theme_black.xml")
+
+        assertThat(attrValue(xml, "colorPrimary"), equalTo("@color/cfa_accent_on_navy"))
+        assertThat(attrValue(xml, "colorAccent"), equalTo("@color/cfa_accent_on_navy"))
+        assertThat(attrValue(xml, "tabActiveIconColor"), equalTo("@color/cfa_accent_on_navy"))
+        assertThat(attrValue(xml, "dynDeckColor"), equalTo("@color/cfa_accent_on_navy"))
+        assertThat(attrValue(xml, "newCountColor"), equalTo("@color/cfa_accent_on_navy"))
+        assertThat(attrValue(xml, "editTextHighlightColor"), equalTo("@color/cfa_navy"))
+        // Both the black-theme snackbar and dialog are dark, so both take the light
+        // warm accent.
+        assertThat(attrValue(xml, "snackbarButtonTextColor"), equalTo("@color/cfa_accent_on_navy"))
+        assertThat(attrValue(xml, "progressDialogButtonTextColor"), equalTo("@color/cfa_accent_on_navy"))
+
+        assertThat(xml, not(containsString("material_blue_400")))
+        assertThat(xml, not(containsString("material_blue_500")))
+        assertThat(xml, not(containsString("material_blue_600")))
+    }
 }

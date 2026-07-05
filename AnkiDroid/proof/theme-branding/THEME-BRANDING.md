@@ -33,9 +33,10 @@ left untouched.
 - `./gradlew :AnkiDroid:processPlayDebugResources` merges cleanly (all refs resolve).
 - Before/after swatch comparison: `theme-branding.png`.
 
-**Deferred (honest).** The **dark & black** themes still use `material_blue_400/500`
-for `colorPrimary` / `colorAccent`, so dark-mode active states, switches and the
-tab indicator remain stock blue. A full dark/black accent rebrand needs
-dark-safe contrast tuning (a bright warm tint like `cfa_accent_on_navy`, not the
-dark navy) and is a dedicated follow-up increment; this pass fixed the safe
-light-theme leaks + the glaring dark-mode FAB.
+**Deferred (now CLOSED — see `DARK-BLACK-REBRAND.md`, M-P4-4).** The **dark & black**
+themes' `colorPrimary` / `colorAccent` and their dependent tints (switches,
+activated widgets, tab indicator, "new" count, dynamic-deck names, dialog/snackbar
+action text) were retoned to the dark-safe warm `cfa_accent_on_navy` (#F0894A,
+AA-safe on the dark surfaces) with navy for the light-surface roles. This pass
+fixed the safe light-theme leaks + the glaring dark-mode FAB; the follow-up
+increment closed the dark/black accent rebrand.

@@ -11,11 +11,19 @@
 
     <style name="Base.Theme.Dark" parent="@style/Theme.Material3.Dark.NoActionBar">
         <!-- Android colors -->
-        <item name="colorPrimary">@color/material_blue_400</item>
+        <!-- CFA fork (dark-mode brand parity): colorPrimary/colorAccent drive the
+             app's interactive tints (switches, checkboxes, sliders, activated
+             widgets, text-button labels, links). They shipped stock-AnkiDroid
+             light-blue in dark mode while the light theme is CFA-branded. Navy is
+             too dark to read on the #303030 dark surface, so dark mode uses the
+             brand's warm accent-on-navy tint (#F0894A, 5.25:1 on #303030 / 8.4:1
+             on black — clears WCAG AA), the same warm identity the FAB already
+             uses in dark mode. -->
+        <item name="colorPrimary">@color/cfa_accent_on_navy</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorPrimaryDark">@color/theme_dark_primary_dark</item>
         <item name="colorSurface">?android:colorBackground</item>
-        <item name="colorAccent">@color/material_blue_400</item>
+        <item name="colorAccent">@color/cfa_accent_on_navy</item>
         <item name="colorOnSurface">@color/white</item>
         <item name="colorPrimaryContainer">@color/white</item> <!-- Switch thumb color when disabled and being pressed -->
         <item name="colorOnPrimaryContainer">@color/white</item> <!-- FAB icons -->
@@ -24,12 +32,19 @@
         <item name="android:textColorSecondary">@color/text_color_secondary_dark</item>
         <item name="android:colorBackground">@color/material_theme_grey</item>
         <item name="android:windowBackground">@color/material_theme_grey</item>
-        <item name="colorSecondaryContainer">#3C5A6E</item>
+        <!-- CFA fork: the tonal secondary container (selected chips/sheets) was a
+             stock blue-grey (#3C5A6E); retone to the brand navy so selected states
+             read on-brand. White onSecondaryContainer text stays high-contrast on
+             navy. -->
+        <item name="colorSecondaryContainer">@color/cfa_navy</item>
         <item name="colorOnSecondaryContainer">@color/white</item>
 
         <item name="colorSurfaceContainerHighest">?attr/colorSurfaceContainer</item>
         <item name="colorSurfaceContainerHigh">#424C54</item>
-        <item name="colorSurfaceContainer">#0F42A5F5</item>
+        <!-- CFA fork: the elevated surface container was a 6% stock-blue tint
+             (#0F42A5F5), the dark-mode twin of the light-theme blue leak; retone to
+             a 6% brand-navy tint so elevated surfaces carry no stock-Anki blue. -->
+        <item name="colorSurfaceContainer">#0F122B46</item>
         <item name="colorSurfaceContainerLow">?android:attr/colorBackground</item>
         <!-- Widget colors -->
         <item name="widgetColorActivated">?attr/colorAccent</item>
@@ -51,17 +66,25 @@
         <item name="actionModeBackground">@color/theme_dark_primary</item>
         <!-- Tab layout -->
         <item name="tabLayoutBackgroundColor">@color/theme_dark_primary</item>
-        <item name="tabActiveIconColor">@color/material_blue_500</item>
+        <!-- CFA fork: active tab icon was stock light-blue; retone to the warm
+             brand accent so the selected tab reads on-brand on the grey tab bar. -->
+        <item name="tabActiveIconColor">@color/cfa_accent_on_navy</item>
         <!-- Deck list colors and divider -->
         <item name="currentDeckBackground">@drawable/item_background_selected</item>
         <item name="currentDeckBackgroundColor">@color/theme_dark_row_current</item>
         <item name="focusedRowBackgroundColor">@color/theme_dark_row_current</item>
-        <item name="dynDeckColor">@color/material_light_blue_500</item>
+        <!-- CFA fork: filtered/dynamic deck names (the curated CFA study decks) were
+             stock light-blue; retone to the warm brand accent so the dark deck list
+             is one cohesive branded list (light theme uses navy on its white list). -->
+        <item name="dynDeckColor">@color/cfa_accent_on_navy</item>
         <item name="deckDivider">@drawable/divider_dark</item>
         <item name="expandRef">@drawable/ic_chevron_right_white</item>
         <item name="collapseRef">@drawable/ic_expand_more_white</item>
         <!-- Count colors -->
-        <item name="newCountColor">@color/material_indigo_200</item>
+        <!-- CFA fork: the "new" count was stock indigo-blue; retone to the warm
+             brand accent (learn = red / review = green kept as the learned Anki
+             affordance), mirroring the light theme's navy "new" count. -->
+        <item name="newCountColor">@color/cfa_accent_on_navy</item>
         <item name="learnCountColor">@color/material_red_200</item>
         <item name="reviewCountColor">@color/material_green_200</item>
         <item name="buryCountColor">@color/disabled_gray_dark</item>
@@ -112,7 +135,10 @@
         <!-- Note editor colors -->
         <item name="duplicateColor">#855</item>
         <item name="editTextBackgroundColor">#EE5C5C5C</item>
-        <item name="editTextHighlightColor">@color/material_light_blue_900</item>
+        <!-- CFA fork: editor text-selection highlight was stock dark-blue; retone to
+             the brand navy so selecting text in the editor stays on-brand (white
+             text stays legible on navy). -->
+        <item name="editTextHighlightColor">@color/cfa_navy</item>
         <item name="toolbarBackgroundColor">#616161</item>
         <item name="toolbarIconColor">@color/white</item>
         <item name="buttonShadowColor">#bdbdbd</item>
@@ -151,7 +177,10 @@
         <item name="snackbarTextViewStyle">@style/Widget.MaterialComponents.Snackbar.TextView</item>
         <item name="snackbarButtonStyle">@style/SnackbarButtonStyle</item>
         <item name="snackbarBackgroundTintColor">#cfcfcf</item>
-        <item name="snackbarButtonTextColor">@color/material_light_blue_900</item>
+        <!-- CFA fork: snackbar action text sits on the LIGHT grey snackbar, so it
+             needs a dark accent — retone from stock dark-blue to the brand navy
+             (9.3:1 on #cfcfcf). -->
+        <item name="snackbarButtonTextColor">@color/cfa_navy</item>
 
         <!-- Introduction -->
         <item name="introductionLogoTransparent">#883d3d3d</item>
@@ -163,7 +192,10 @@
 
         <!-- ProgressDialog-->
         <item name="dialogBackground">#ff303030</item>
-        <item name="progressDialogButtonTextColor">@color/material_light_blue_400</item>
+        <!-- CFA fork: dialog action-button text sits on the dark #303030 dialog, so
+             it needs a light accent — retone from stock light-blue to the warm
+             brand accent-on-navy. -->
+        <item name="progressDialogButtonTextColor">@color/cfa_accent_on_navy</item>
 
         <item name="checkMediaListBackground">@color/material_grey_700</item>
         <item name="checkMediaListForeground">@color/white</item>
