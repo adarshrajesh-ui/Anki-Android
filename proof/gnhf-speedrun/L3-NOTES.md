@@ -36,12 +36,46 @@ Plan: `SPEEDRUN-MOBILE-PLAN.md`. Track M1–M5 + mobile UI passes here.
   branch). Corroborated by desktop `pytest pylib/tests/test_cfa_sync.py` → 7 passed.
   Evidence: `proof/gnhf-speedrun/L3/reverse-sync/` (3-shot sequence + reverse-sync.txt
   + cfa_desktop_review.py).
-- M3 same-card offline conflict merge — TODO
+- **M3 [P1] same-card offline conflict merge — DONE.**
+  Device-observable on emulator-5554. Card X=1783137755188 ("What defines a hedge
+  fund...") reviewed on BOTH devices while diverged from a shared base: the PHONE
+  answered AGAIN (ease 1) OFFLINE (airplane mode) -> phone revlog 1783212583931,
+  card into learning; the DESKTOP then answered EASY (ease 4) at a LATER time
+  (revlog 1783212648010) from the same base and uploaded. After the phone came
+  online and synced, the converged phone collection (pulled from device, WAL
+  applied) shows the MORE-RECENT desktop review WON: card X queue=2 (review),
+  ivl=4d, mod=1783212648 — the phone's Again learning state was overridden — yet
+  the phone's own Again revlog row is still present (no lost review) and reps=1
+  (no double-count). DeckPicker visibly went "2 0 0"->"1 1 0" (phone Again put
+  card X in learning) ->"2 0 0" (desktop Easy graduated it back to review).
+  Honest: Readiness's displayed graded count is RAW (26->28); the engine
+  anti-cram DEDUPED count is 21 (same-card same-day => one (card,day)).
+  Corroborated by desktop pytest test_cfa_sync.py::test_conflict_more_recent_wins*
+  (12/12) and the full file 20/20 after de-flaking a pre-existing same-ms
+  collection-mod sync race. Evidence: proof/gnhf-speedrun/L3/conflict-merge.txt
+  + conflict-merge/ (5-shot sequence + cfa_desktop_conflict_review.py).
 - M4 offline-then-sync + AI-off scores — TODO
 - M5 packaged phone build — TODO
 - Phase B mobile UI passes (≥3) — TODO
 
 ## Key learnings
+- M3 conflict method: put the PHONE in airplane mode, review card X in the
+  AnkiDroid reviewer offline, identify card X from the newest phone revlog row,
+  then have the desktop review that SAME card id from the server base (later
+  timestamp = winner), airplane-mode OFF, sync. Anki sync is last-writer-wins on
+  card STATE (both revlog rows always persist). Answering Again on the phone vs
+  Easy on the desktop gives a visibly different winning state (learning vs
+  review) so the "more-recent wins" outcome is observable in the DeckPicker.
+- The desktop's set_due_date([cid],"0") (used to force the card due before
+  answering) writes an extra revlog row (type=4, ease=0) that is NOT a graded
+  review — expect 3 rows for card X after the merge (phone Again + this marker +
+  desktop Easy), only 2 of which are graded.
+- test_cfa_sync.py had a pre-existing timing flake: fresh getEmptyCol()
+  collections that sync within one millisecond tick share a collection-mod
+  anchor, so the receiver's incremental sync reports NO_CHANGES and never pulls
+  a one-way change. Extra sync rounds do NOT fix it; a ~50ms settle before each
+  review (so its mod is strictly later than the last sync) does. Fixed in the
+  desktop repo's _review() helper.
 - The mobile CFA backend is a LOCAL fork build (`../Anki-Android-Backend`,
   `local_backend=true`), NOT the published `anki-android-backend` AAR (which lacks all
   CFA RPCs). `cfa_build_fork_engine.sh` clones `~/AlphaWeek2/ankiCFA` (main) into
