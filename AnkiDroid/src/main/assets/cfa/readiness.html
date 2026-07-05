@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later
+     CFA fork — Exam Readiness screen, the phone's self-contained CFA-styled
+     readiness page, mirroring the desktop CfaReadinessPage.svelte. A quiet brand
+     lockup, the Bayesian pass/fail VERDICT hero (accuracy + 95% CI, or the honest
+     abstain state), three VALUE-FIRST honest-score cards (Memory / Performance /
+     Readiness), the per-topic recall table, a coverage caption, and the
+     explanatory footer. The host Activity injects the learner's REAL scores via
+     `window.CFA_READINESS_DATA` (built by CfaReadiness.kt, byte-identical to the
+     desktop helpers). Study CTAs call the `AndroidCfaReadiness` @JavascriptInterface
+     bridge to launch the native priority-study / exam-config screens. Uses the
+     SAME CFA design tokens as home.html + concept_map.html, so all three CFA
+     surfaces read as one product. With no data injected an honest abstaining
+     state renders. -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=4, user-scalable=yes" />
+<title>ankiCFA — Exam Readiness</title>
+<style>
+  :root{
+    --ink:#122B46; --muted:#4D5C6D; --faint:#68707D;
+    --line:#E7EBEF; --surface:#F3F6F8; --bg:#ffffff;
+    --navy:#122B46; --accent:#DA5C01; --accent-soft:#FCEBDA; --accent-ink:#A84500;
+    --warn:#B45309; --warn-soft:#FDF3E7; --green:#007E56;
+    --pass:#007E56; --fail:#B42318; --pass-soft:#E9F5EF; --fail-soft:#FCECEA;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; padding:0;}
+  body{font-family:var(--sans); color:var(--ink); background:var(--surface); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;}
+  .wrap{max-width:820px; margin:0 auto; padding:18px 16px 44px;}
+
+  .eyebrow{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--green);}
+  h1{font-size:24px; font-weight:700; line-height:1.12; margin:4px 0 16px; letter-spacing:-.01em;}
+
+  /* Verdict hero — a flat, hairline card with a tone-coloured spine. */
+  .hero{background:var(--bg); border:1px solid var(--line); border-left:4px solid var(--navy); border-radius:12px; padding:16px 18px; margin:0 0 22px;}
+  .hero.is-pass{border-left-color:var(--pass); background:var(--pass-soft);}
+  .hero.is-fail{border-left-color:var(--fail); background:var(--fail-soft);}
+  .hero.is-warn{border-left-color:var(--warn); background:var(--warn-soft);}
+  .hero .h-call{font-size:26px; font-weight:700; line-height:1.15; letter-spacing:-.01em;}
+  .hero.is-pass .h-call{color:var(--pass);}
+  .hero.is-fail .h-call{color:var(--fail);}
+  .hero.is-warn .h-call{color:var(--warn);}
+  .hero .h-prob{font-size:13px; color:var(--muted); margin-top:2px;}
+  .hero .h-lead{font-size:14px; color:var(--ink); margin-top:12px; line-height:1.55;}
+  .hero .h-lead .em{font-weight:600; color:var(--ink);}
+  .hero .h-lead .mut{color:var(--muted);}
+  .hero .h-note{font-size:12px; color:var(--muted); margin-top:10px; line-height:1.5;}
+
+  .block{margin:0 0 24px;}
+  .block-eb{font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 10px;}
+
+  /* Three value-first stat cards, responsive. */
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;}
+  .stat{background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:14px 15px;}
+  .stat .s-val{font-size:22px; font-weight:600; line-height:1.15; letter-spacing:-.01em;}
+  .stat.is-muted .s-val{color:var(--faint); font-size:16px; font-weight:600;}
+  .stat .s-name{display:block; font-size:12.5px; font-weight:600; color:var(--muted); margin-top:8px;}
+  .stat .s-meaning{display:block; font-size:11.5px; line-height:1.35; color:var(--faint); margin-top:2px;}
+  .stat .s-sub{display:block; font-size:11.5px; color:var(--faint); margin-top:8px;}
+  .cap{font-size:11.5px; color:var(--faint); margin:10px 0 0; line-height:1.4;}
+
+  /* Per-topic recall table. */
+  .table-hint{font-size:12px; color:var(--muted); margin:0 0 10px; line-height:1.45;}
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  th{font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); text-align:right; padding:0 0 8px; border-bottom:1px solid var(--line);}
+  th.l, td.l{text-align:left;}
+  td{padding:9px 0; border-bottom:1px solid var(--line); text-align:right; color:var(--ink); font-variant-numeric:tabular-nums;}
+  td.name{color:var(--ink); font-weight:500;}
+  td.recall.is-warn{color:var(--warn);}
+  td.recall.is-muted{color:var(--faint);}
+
+  /* Study CTAs — matches the Home CTA grid. */
+  .ctas{display:grid; grid-template-columns:1fr; gap:10px;}
+  .cta{display:block; width:100%; text-align:left; background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:14px 15px; cursor:pointer; font-family:var(--sans); color:var(--ink); -webkit-appearance:none;}
+  .cta:active{background:var(--surface);}
+  .cta.is-primary{background:var(--accent-soft); border-color:var(--accent);}
+  .cta .c-label{display:block; font-size:15px; font-weight:600; color:var(--ink);}
+  .cta .c-sub{display:block; font-size:12.5px; color:var(--muted); margin-top:2px;}
+
+  .foot{margin-top:14px;}
+  .chip{display:inline-block; font-size:11px; font-weight:600; color:var(--muted); background:var(--surface); border:1px solid var(--line); border-radius:100px; padding:4px 11px;}
+  .footer-note{font-size:11.5px; color:var(--faint); margin:14px 0 0; line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Exam Readiness</div>
+  <h1 id="title">Exam Readiness</h1>
+
+  <div id="hero" class="hero" role="group">
+    <div class="h-call" id="hero-call">—</div>
+    <div class="h-prob" id="hero-prob"></div>
+    <div class="h-lead" id="hero-lead"></div>
+    <div class="h-note" id="hero-note"></div>
+  </div>
+
+  <div class="block">
+    <div class="block-eb">Honest scores</div>
+    <div class="stats" id="stats"></div>
+    <p class="cap" id="cap"></p>
+  </div>
+
+  <div class="block">
+    <div class="block-eb">Per-topic recall</div>
+    <p class="table-hint" id="table-hint" style="display:none;">
+      No reviews yet — per-topic recall appears here after you study. The table
+      below lists every exam area and its weight.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th class="l">Topic</th>
+          <th>Weight</th>
+          <th>Graded</th>
+          <th>Recall R</th>
+        </tr>
+      </thead>
+      <tbody id="topics"></tbody>
+    </table>
+  </div>
+
+  <div class="block">
+    <div class="block-eb">Study</div>
+    <div class="ctas" id="ctas"></div>
+  </div>
+
+  <div class="foot">
+    <span class="chip" id="src-chip"></span>
+  </div>
+  <p class="footer-note" id="footer"></p>
+</div>
+
+<script>
+(function () {
+  var DATA = window.CFA_READINESS_DATA || {
+    title: "Exam Readiness",
+    hero: { mode: "abstain", headline: "Not enough data — keep studying", note: "Keep studying to unlock a pass/fail call." },
+    scores: [], caption: "", topics: [], awaitingRecall: false,
+    footer: "", source: "fallback"
+  };
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  document.getElementById("title").textContent = DATA.title || "Exam Readiness";
+
+  // --- Verdict hero ---------------------------------------------------------
+  var hero = DATA.hero || {};
+  var heroEl = document.getElementById("hero");
+  var callEl = document.getElementById("hero-call");
+  var probEl = document.getElementById("hero-prob");
+  var leadEl = document.getElementById("hero-lead");
+  var noteEl = document.getElementById("hero-note");
+  if (hero.mode === "bayesian") {
+    heroEl.className = "hero " + (hero.passed ? "is-pass" : "is-fail");
+    callEl.textContent = hero.call || "";
+    probEl.textContent = hero.callProb || "";
+    // Byte-mirror of the desktop hero lead (accuracy + 95% CI vs MPS · recall).
+    var lead =
+      'Estimated exam-weighted accuracy <span class="em">' + esc(hero.accuracy) + "</span> " +
+      '<span class="mut">(95% CI ' + esc(hero.ciLow) + "–" + esc(hero.ciHigh) + ")</span> " +
+      "vs ~" + esc(hero.mps) + " MPS proxy";
+    if (hero.recall) {
+      lead += ' · est. recall <span class="em">' + esc(hero.recall) + "</span> " +
+        '<span class="mut">(FSRS R, SM-2 fallback)</span>';
+    }
+    leadEl.innerHTML = lead;
+    noteEl.textContent = hero.note || "";
+    heroEl.setAttribute(
+      "aria-label",
+      (hero.call || "") + ". " + (hero.callProb || "") + ". " +
+        leadEl.textContent + " " + (hero.note || ""),
+    );
+  } else {
+    heroEl.className = "hero is-warn";
+    callEl.textContent = hero.headline || "Not enough data — keep studying";
+    probEl.textContent = "";
+    leadEl.textContent =
+      "No pass/fail call yet — the estimate stays hidden until there is enough " +
+      "graded review evidence to be honest. It appears here once the give-up " +
+      "threshold is met.";
+    noteEl.textContent = hero.note || "";
+    heroEl.setAttribute("aria-label", callEl.textContent + ". " + leadEl.textContent + " " + (hero.note || ""));
+  }
+
+  // --- Honest scores --------------------------------------------------------
+  var statsEl = document.getElementById("stats");
+  (DATA.scores || []).forEach(function (s) {
+    var card = document.createElement("div");
+    card.className = "stat" + (s.tone === "muted" ? " is-muted" : "");
+    card.innerHTML =
+      '<div class="s-val">' + esc(s.value) + "</div>" +
+      '<span class="s-name">' + esc(s.name) + "</span>" +
+      '<span class="s-meaning">' + esc(s.meaning) + "</span>" +
+      '<span class="s-sub">' + esc(s.sub) + "</span>";
+    statsEl.appendChild(card);
+  });
+  document.getElementById("cap").textContent = DATA.caption || "";
+
+  // --- Per-topic recall table ----------------------------------------------
+  if (DATA.awaitingRecall) document.getElementById("table-hint").style.display = "";
+  var tbody = document.getElementById("topics");
+  (DATA.topics || []).forEach(function (t) {
+    var tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td class="l name">' + esc(t.name) + "</td>" +
+      "<td>" + esc(t.weight) + "</td>" +
+      "<td>" + esc(t.graded) + "</td>" +
+      '<td class="recall' + (t.tone === "warn" ? " is-warn" : t.tone === "muted" ? " is-muted" : "") + '">' +
+        esc(t.recall) + "</td>";
+    tbody.appendChild(tr);
+  });
+
+  // --- Study CTAs -----------------------------------------------------------
+  var CTAS = [
+    { target: "priority", label: "Study by Exam Priority", sub: "Weakest, heaviest-weighted cards first", primary: true },
+    { target: "config", label: "Exam Configuration", sub: "Set your exam date & topic weights" }
+  ];
+  var ctasEl = document.getElementById("ctas");
+  CTAS.forEach(function (c) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "cta" + (c.primary ? " is-primary" : "");
+    b.setAttribute("data-target", c.target);
+    b.innerHTML =
+      '<span class="c-label">' + esc(c.label) + "</span>" +
+      '<span class="c-sub">' + esc(c.sub) + "</span>";
+    b.addEventListener("click", function () {
+      try {
+        if (window.AndroidCfaReadiness && window.AndroidCfaReadiness.open) {
+          window.AndroidCfaReadiness.open(c.target);
+        }
+      } catch (e) { /* bridge absent (e.g. desktop preview) — no-op */ }
+    });
+    ctasEl.appendChild(b);
+  });
+
+  // --- Source provenance chip + footer -------------------------------------
+  document.getElementById("src-chip").textContent =
+    DATA.source === "rpc" ? "Source: shared engine" : "Source: on-device (deterministic)";
+  document.getElementById("footer").textContent = DATA.footer || "";
+})();
+</script>
+</body>
+</html>

@@ -27,6 +27,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ichi2.anki.R
 import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.containsString
 import org.hamcrest.Matchers.greaterThanOrEqualTo
 import org.hamcrest.Matchers.lessThan
 import org.junit.Test
@@ -144,26 +145,46 @@ class CfaContrastTest {
     // ---- Regression guard: the three repointed text views use AA-safe tokens ----
 
     @Test
-    fun `readiness and config eyebrows, countdown and tagline use AA-safe accent-text tokens`() {
+    fun `config eyebrows, countdown and tagline use AA-safe accent-text tokens`() {
         val res = findResDir()
 
         fun read(rel: String) = java.io.File(res, rel).readText()
 
-        val readiness = read("layout/activity_cfa_exam_readiness.xml")
         val config = read("layout/activity_cfa_exam_config.xml")
         val drawer = read("layout/view_navdrawer_header.xml")
 
-        // The eyebrow / countdown TextViews on the two LIGHT screens must use the
-        // dark AA-safe accent-ink; none of the three may bind the raw accent.
-        assertThat("readiness eyebrow must use accent_ink", readiness.contains("@color/cfa_accent_ink"), equalToTrue())
+        // The eyebrow / countdown TextViews on the LIGHT config screen must use the
+        // dark AA-safe accent-ink; neither native screen may bind the raw accent.
         assertThat("config uses accent_ink (eyebrow + countdown)", config.split("@color/cfa_accent_ink").size - 1, greaterThanOrEqualTo(2))
         assertThat("drawer tagline must use accent_on_navy", drawer.contains("@color/cfa_accent_on_navy"), equalToTrue())
 
         // No CFA text view may bind the raw (AA-failing) accent as its textColor.
-        for ((name, xml) in listOf("readiness" to readiness, "config" to config, "drawer" to drawer)) {
+        for ((name, xml) in listOf("config" to config, "drawer" to drawer)) {
             val bad = Regex("android:textColor=\"@color/cfa_accent\"").containsMatchIn(xml)
             assertThat("$name must not use raw cfa_accent as textColor", bad, equalToFalse())
         }
+    }
+
+    @Test
+    fun `readiness webview asset never uses the raw AA-failing accent as text colour`() {
+        // The Exam Readiness eyebrow moved from a native TextView into the
+        // assets/cfa/readiness.html WebView (matching the desktop page). Its
+        // eyebrow uses the AA-safe green (#007E56); the raw warm accent (#DA5C01)
+        // is used ONLY for borders/spines there, never as a text `color:`.
+        val html =
+            listOf(
+                java.io.File("src/main/assets/cfa/readiness.html"),
+                java.io.File("AnkiDroid/src/main/assets/cfa/readiness.html"),
+            ).firstOrNull { it.exists() }
+        assertThat("readiness.html asset must exist", html != null, equalToTrue())
+        val css = html!!.readText()
+        // The eyebrow reads in the AA-safe green, not the raw accent.
+        assertThat(css, containsString("color:var(--green)"))
+        // The raw warm accent may back a border/spine (`border-color:var(--accent)`)
+        // but must never be a TEXT `color:` — match the property only when it is
+        // NOT the tail of `border-color` etc. (i.e. preceded by `;`, `{` or space).
+        val rawAccentText = Regex("[;{ ]color:var\\(--accent\\)").containsMatchIn(css)
+        assertThat("raw --accent must not be a text colour", rawAccentText, equalToFalse())
     }
 
     private fun equalToTrue() = org.hamcrest.Matchers.equalTo(true)
