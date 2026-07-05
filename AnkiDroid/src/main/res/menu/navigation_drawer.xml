@@ -5,21 +5,33 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <group android:id="@+id/group1"
         android:checkableBehavior="single">
+        <!-- CFA fork: native CFA nav, ordered to match the desktop top bar —
+             Home / Study / Ethics / Concept Map / Readiness. -->
         <!-- CFA fork: the CFA Home / Today dashboard, the native CFA landing screen. -->
         <item
             android:id="@+id/nav_cfa_home"
             android:icon="@drawable/ic_cfa_home"
             android:title="@string/cfa_nav_home" />
-        <!-- CFA fork: flagship entry into the Exam Readiness surface. -->
+        <!-- CFA fork: study by exam priority (weakest topics first). -->
         <item
-            android:id="@+id/nav_cfa_readiness"
-            android:icon="@drawable/ic_cfa_readiness"
-            android:title="@string/cfa_nav_exam_readiness" />
+            android:id="@+id/nav_cfa_study"
+            android:icon="@drawable/ic_cfa_study"
+            android:title="@string/cfa_nav_study" />
+        <!-- CFA fork: the flagship Ethics Minimal-Pairs drill. -->
+        <item
+            android:id="@+id/nav_cfa_ethics"
+            android:icon="@drawable/ic_cfa_ethics"
+            android:title="@string/cfa_nav_ethics" />
         <!-- CFA fork: the Concept Map (radial mastery map), identical on phone & desktop. -->
         <item
             android:id="@+id/nav_cfa_concept_map"
             android:icon="@drawable/ic_cfa_concept_map"
             android:title="@string/cfa_nav_concept_map" />
+        <!-- CFA fork: flagship entry into the Exam Readiness surface. -->
+        <item
+            android:id="@+id/nav_cfa_readiness"
+            android:icon="@drawable/ic_cfa_readiness"
+            android:title="@string/cfa_nav_exam_readiness" />
         <item
             android:id="@+id/nav_decks"
             android:icon="@drawable/ic_list_black" />

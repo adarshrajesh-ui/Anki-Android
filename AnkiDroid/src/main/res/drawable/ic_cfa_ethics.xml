@@ -1,0 +1,17 @@
+<!--
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ CFA fork: nav drawer icon for the Ethics (Minimal-Pairs drill) surface.
+  ~ Google Material Design "balance" (scales of justice) icon (Apache 2.0),
+  ~ tinted to follow the drawer's control-normal colour like the other nav icons.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?colorControlNormal"
+    >
+  <path
+      android:fillColor="#FFFFFF"
+      android:pathData="M12,3c-1.27,0 -2.4,0.8 -2.82,2L3,7v2h1.95L2,16c-0.47,2 1,3 3.5,3s4.06,-1 3.5,-3L6.05,9h5.95v11h-2v2h6v-2h-2V9h5.95l-2.95,7c-0.47,2 1,3 3.5,3s4.06,-1 3.5,-3l-2.95,-7H21V7h-6.18C14.4,5.84 13.27,5 12,3zM7.5,16h-3l1.5,-4 1.5,4zM19.5,16h-3l1.5,-4 1.5,4z"/>
+</vector>

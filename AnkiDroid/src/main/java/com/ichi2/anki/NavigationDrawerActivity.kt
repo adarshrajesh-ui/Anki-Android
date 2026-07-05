@@ -350,6 +350,16 @@ abstract class NavigationDrawerActivity(
                         startActivity(CfaHomeActivity.getIntent(this@NavigationDrawerActivity))
                     }
 
+                    R.id.nav_cfa_study -> {
+                        Timber.i("Navigating to CFA Study by Exam Priority")
+                        startActivity(CfaExamPriorityActivity.getIntent(this@NavigationDrawerActivity))
+                    }
+
+                    R.id.nav_cfa_ethics -> {
+                        Timber.i("Navigating to CFA Ethics Minimal-Pairs drill")
+                        startActivity(CfaEthicsStudyActivity.getIntent(this@NavigationDrawerActivity))
+                    }
+
                     R.id.nav_cfa_readiness -> {
                         Timber.i("Navigating to CFA Exam Readiness")
                         startActivity(CfaExamReadinessActivity.getIntent(this@NavigationDrawerActivity))

@@ -60,6 +60,11 @@
     <string name="cfa_title_concept_map" comment="Action-bar title of the Concept Map screen">Concept Map</string>
     <string name="cfa_nav_home" comment="Nav-drawer menu entry that opens the CFA Home / Today dashboard (the native CFA landing screen)" maxLength="28">Home</string>
     <string name="cfa_title_home" comment="Action-bar title of the CFA Home / Today dashboard screen">Exam Home</string>
+    <!-- CFA fork: nav-drawer entries for the two study drills, giving the phone
+         the same native Home / Study / Ethics / Concept Map / Readiness nav the
+         desktop top bar has (previously reachable only from the Home dashboard). -->
+    <string name="cfa_nav_study" comment="Nav-drawer menu entry that launches a study session ordered by exam priority (weakest topics first)" maxLength="28">Study</string>
+    <string name="cfa_nav_ethics" comment="Nav-drawer menu entry that launches the Ethics Minimal-Pairs study drill" maxLength="28">Ethics</string>
     <!-- Log out entry (under Statistics): opens the sync account screen (Log out when logged in, Log in otherwise). -->
     <string name="cfa_nav_sync_account" maxLength="28">Log out</string>
 

@@ -202,4 +202,43 @@ class CfaHomeTest {
         // Honest source provenance chip (shared engine vs on-device).
         assertThat(html, containsString("shared engine"))
     }
+
+    private fun repoFile(vararg candidates: String): String {
+        val f = candidates.map { File(it) }.firstOrNull { it.exists() }
+        assertThat("one of $candidates must exist for this guard", f != null, equalTo(true))
+        return f!!.readText()
+    }
+
+    // --- Native nav-drawer parity guard --------------------------------------
+    // The phone's CFA nav must match the desktop top bar: Home / Study / Ethics
+    // / Concept Map / Readiness are all reachable natively from the drawer, not
+    // only from the Home dashboard's CTAs.
+    @Test
+    fun nav_drawer_exposes_all_five_cfa_sections() {
+        val menu =
+            repoFile(
+                "src/main/res/menu/navigation_drawer.xml",
+                "AnkiDroid/src/main/res/menu/navigation_drawer.xml",
+            )
+        for (id in listOf("nav_cfa_home", "nav_cfa_study", "nav_cfa_ethics", "nav_cfa_concept_map", "nav_cfa_readiness")) {
+            assertThat("drawer must contain $id", menu, containsString(id))
+        }
+        // New study drills carry their own CFA icons, not a stock reuse.
+        assertThat(menu, containsString("ic_cfa_study"))
+        assertThat(menu, containsString("ic_cfa_ethics"))
+    }
+
+    @Test
+    fun nav_drawer_handler_launches_study_and_ethics_natively() {
+        val handler =
+            repoFile(
+                "src/main/java/com/ichi2/anki/NavigationDrawerActivity.kt",
+                "AnkiDroid/src/main/java/com/ichi2/anki/NavigationDrawerActivity.kt",
+            )
+        // Study -> exam-priority drill; Ethics -> Minimal-Pairs drill.
+        assertThat(handler, containsString("R.id.nav_cfa_study"))
+        assertThat(handler, containsString("CfaExamPriorityActivity.getIntent"))
+        assertThat(handler, containsString("R.id.nav_cfa_ethics"))
+        assertThat(handler, containsString("CfaEthicsStudyActivity.getIntent"))
+    }
 }
