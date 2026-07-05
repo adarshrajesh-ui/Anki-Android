@@ -345,6 +345,11 @@ abstract class NavigationDrawerActivity(
             Runnable {
                 // Take action if a different item selected
                 when (item.itemId) {
+                    R.id.nav_cfa_home -> {
+                        Timber.i("Navigating to CFA Home")
+                        startActivity(CfaHomeActivity.getIntent(this@NavigationDrawerActivity))
+                    }
+
                     R.id.nav_cfa_readiness -> {
                         Timber.i("Navigating to CFA Exam Readiness")
                         startActivity(CfaExamReadinessActivity.getIntent(this@NavigationDrawerActivity))

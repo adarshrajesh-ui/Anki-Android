@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+  CFA fork: the CFA Home / Today dashboard. Branded CFA toolbar + a full-bleed
+  WebView that renders the shared self-contained dashboard asset
+  (assets/cfa/home.html), fed the learner's real scores + exam countdown by
+  CfaHomeActivity. The native CFA landing screen, matching the desktop CFA Home.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/cfa_surface"
+    tools:context=".CfaHomeActivity">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/cfa_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="?attr/actionBarSize"
+        android:background="@color/cfa_navy"
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+        app:titleTextColor="@android:color/white"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <WebView
+        android:id="@+id/cfa_home_web"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/cfa_toolbar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

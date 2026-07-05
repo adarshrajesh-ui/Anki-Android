@@ -517,6 +517,12 @@ open class DeckPicker :
         setupEdgeToEdge()
         title = resources.getString(R.string.app_name)
 
+        // CFA fork: on a genuine cold launch, open into the native CFA Home
+        // dashboard instead of this raw deck list (desktop parity). Tightly
+        // guarded so in-app navigation to the decks never loops back. See
+        // CfaBootstrap.maybeOpenCfaHome.
+        maybeOpenCfaHome(savedInstanceState)
+
         deckPickerBinding.deckPickerContent.visibility = View.GONE
         deckPickerBinding.noDecksPlaceholder.visibility = View.GONE
 

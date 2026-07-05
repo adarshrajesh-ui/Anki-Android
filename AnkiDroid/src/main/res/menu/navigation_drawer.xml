@@ -5,6 +5,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <group android:id="@+id/group1"
         android:checkableBehavior="single">
+        <!-- CFA fork: the CFA Home / Today dashboard, the native CFA landing screen. -->
+        <item
+            android:id="@+id/nav_cfa_home"
+            android:icon="@drawable/ic_cfa_home"
+            android:title="@string/cfa_nav_home" />
         <!-- CFA fork: flagship entry into the Exam Readiness surface. -->
         <item
             android:id="@+id/nav_cfa_readiness"

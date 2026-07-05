@@ -58,6 +58,8 @@
     <string name="cfa_title_exam_readiness" comment="Action-bar title of the Exam Readiness screen; same words as the nav-drawer entry but a distinct title string">Exam Readiness</string>
     <string name="cfa_nav_concept_map" comment="Nav-drawer menu entry that opens the Concept Map (radial mastery map) screen" maxLength="28">Concept Map</string>
     <string name="cfa_title_concept_map" comment="Action-bar title of the Concept Map screen">Concept Map</string>
+    <string name="cfa_nav_home" comment="Nav-drawer menu entry that opens the CFA Home / Today dashboard (the native CFA landing screen)" maxLength="28">Home</string>
+    <string name="cfa_title_home" comment="Action-bar title of the CFA Home / Today dashboard screen">Exam Home</string>
     <!-- Log out entry (under Statistics): opens the sync account screen (Log out when logged in, Log in otherwise). -->
     <string name="cfa_nav_sync_account" maxLength="28">Log out</string>
 
