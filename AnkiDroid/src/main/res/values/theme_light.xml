@@ -3,8 +3,14 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="DuplicateCrowdInStrings">
     <style name="Base.Theme.Light" parent="@style/Theme.Material3.Light.NoActionBar">
         <!-- Android colors -->
-        <item name="colorPrimary">@color/material_light_blue_500</item>
-        <item name="colorPrimaryDark">@color/material_light_blue_700</item>
+        <!-- CFA fork shell brand (Phase B Pass-2 shell refactor): the whole app
+             chrome (toolbar, status bar, tab bar, action mode, activated widgets)
+             derives from colorPrimary, so branding it navy makes the DeckPicker,
+             nav drawer and Reviewer read as a native CFA product instead of
+             stock AnkiDroid light-blue. -->
+        <item name="colorPrimary">@color/cfa_navy</item>
+        <item name="colorPrimaryDark">@color/cfa_navy_hover</item>
+        <item name="colorOnPrimary">@color/white</item>
         <item name="colorSurface">@color/white</item>
         <item name="colorOnSurface">@color/black</item>
         <item name="colorAccent">@color/material_blue_grey_700</item>
@@ -62,7 +68,7 @@
         <item name="hardButtonBackground">@color/material_blue_grey_700</item>
         <item name="goodButtonBackground">@color/material_green_500</item>
         <item name="easyButtonBackground">@color/material_light_blue_500</item>
-        <item name="topBarColor">@color/material_light_blue_100</item>
+        <item name="topBarColor">@color/cfa_surface</item>
         <item name="maxTimerColor">@color/material_red_500</item>
         <item name="answerButtonTextColor">@color/white</item>
         <item name="againButtonTextColor">@color/white</item>
@@ -111,9 +117,9 @@
         <item name="buttonShadowColor">#FFAAAAAA</item>
         <item name="buttonRippleColor">#595959</item>
         <item name="buttonForegroundColor">#D6D7D7</item>
-        <!-- FAB -->
-        <item name="fab_normal">@color/material_light_blue_700</item>
-        <item name="fab_pressed">@color/material_light_blue_900</item>
+        <!-- FAB / Study button — the single warm CFA accent (shell refactor). -->
+        <item name="fab_normal">@color/cfa_accent</item>
+        <item name="fab_pressed">@color/cfa_accent_hover</item>
         <!-- Images -->
         <item name="navDrawerImage">@drawable/nav_drawer_logo</item>
         <!-- Dialog styles -->

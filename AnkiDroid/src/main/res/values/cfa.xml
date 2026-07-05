@@ -16,8 +16,12 @@
       rather than the current layouts, so the unused ones are marked.
     -->
     <color name="cfa_navy">#122B46</color>
-    <color name="cfa_navy_hover" tools:ignore="UnusedResources">#0E2238</color>
+    <!-- cfa_navy_hover now backs the shell colorPrimaryDark / status bar (Phase B
+         Pass-2 shell refactor), so it is no longer unused. -->
+    <color name="cfa_navy_hover">#0E2238</color>
     <color name="cfa_accent">#DA5C01</color>
+    <!-- Pressed variant of the accent for the FAB / Study button (shell refactor). -->
+    <color name="cfa_accent_hover">#B34B01</color>
     <color name="cfa_accent_soft" tools:ignore="UnusedResources">#FCEBDA</color>
     <color name="cfa_pass" tools:ignore="UnusedResources">#15803D</color>
     <color name="cfa_fail" tools:ignore="UnusedResources">#B91C1C</color>
@@ -31,6 +35,8 @@
 
     <!-- Nav drawer / branding. Not translated (feature in progress). -->
     <string name="cfa_brand_eyebrow">ANKICFA · CFA LEVEL II</string>
+    <string name="cfa_brand_wordmark">ankiCFA</string>
+    <string name="cfa_brand_tagline">CFA Level II · Exam Prep</string>
     <string name="cfa_nav_exam_readiness" comment="Nav-drawer menu entry that opens the Exam Readiness screen; same words as its screen title but a distinct menu string" maxLength="28">Exam Readiness</string>
     <string name="cfa_title_exam_readiness" comment="Action-bar title of the Exam Readiness screen; same words as the nav-drawer entry but a distinct title string">Exam Readiness</string>
     <!-- Log out entry (under Statistics): opens the sync account screen (Log out when logged in, Log in otherwise). -->
