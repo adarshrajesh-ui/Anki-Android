@@ -67,6 +67,24 @@ data class CfaGradeResult(
     val error: String?,
 )
 
+/**
+ * The Concept Map's SINGLE batched explanation result (`POST /cfa/mapexplain`).
+ * Mirrors the desktop `cfa/ai/mapexplain.explain_map` + pycmd bridge contract:
+ * ONE call for the whole map returns an id -> plain-English "why" map. [source]
+ * is "ai" on success, "fallback" whenever AI is off / no key / any failure — in
+ * which case [explanations] is empty and the map JS keeps its deterministic
+ * templated wording per node. [aiOn] is false only when the synced master AI
+ * toggle is off (so the phone can say "AI off" vs "AI failed").
+ */
+data class CfaMapExplainResult(
+    val ok: Boolean,
+    val aiOn: Boolean,
+    val explanations: Map<String, String>,
+    val source: String,
+    val model: String?,
+    val error: String?,
+)
+
 /** Injection seam for the HTTP POST so the client is unit-testable without network. */
 fun interface CfaHttpPost {
     /** POST [jsonBody] to [url] with a Bearer [token]; return (httpStatus, body). */
@@ -119,6 +137,104 @@ object CfaAiClient {
 
     /** The honest AI-off tab-fill result — no network call, deterministic fallback (desktop error "ai_off"). */
     fun aiOffFill(): CfaAiResult = CfaAiResult(false, "", null, "fallback", null, "ai_off")
+
+    /**
+     * Whether the Concept Map's batched AI explanation is enabled by the SYNCED
+     * toggles. Gated on the MASTER switch only (default ON) — matching the desktop
+     * `cfa_concept_map_ai._map_ai_enabled`: the explanation is a read-only
+     * narration layered on the same scores, so it honours the one switch the user
+     * flips to go fully offline rather than adding a third control.
+     */
+    fun mapExplainEnabled(col: Collection): Boolean = col.config.get<Boolean>(MASTER_KEY) ?: true
+
+    /** The honest AI-off Concept-Map explanation result — no network, keep templated wording. */
+    fun aiOffMapExplain(): CfaMapExplainResult =
+        CfaMapExplainResult(false, aiOn = false, explanations = emptyMap(), source = "fallback", model = null, error = "ai_off")
+
+    /**
+     * Concept Map — the SINGLE batched explanation via the proxy configured in
+     * [col]. [nodesJson] is the JSON array of `{id, full, kind, pct, band, parent}`
+     * the map JS built (matching the desktop node ids). Skips the network entirely
+     * when the synced master AI toggle is off (returns the honest "ai_off"
+     * fallback so the map keeps its templated wording). Never throws.
+     */
+    fun explainMap(
+        col: Collection,
+        nodesJson: String,
+        poster: CfaHttpPost = DEFAULT_POST,
+    ): CfaMapExplainResult =
+        if (!mapExplainEnabled(col)) {
+            aiOffMapExplain()
+        } else {
+            explainMap(proxyUrl(col), proxyToken(col), nodesJson, poster)
+        }
+
+    /** Pure overload: POST {nodes} to `/cfa/mapexplain` at [baseUrl]; parse the id->text map. */
+    fun explainMap(
+        baseUrl: String,
+        token: String,
+        nodesJson: String,
+        poster: CfaHttpPost,
+    ): CfaMapExplainResult {
+        val nodes =
+            try {
+                JSONArray(nodesJson)
+            } catch (e: Exception) {
+                return CfaMapExplainResult(
+                    false,
+                    aiOn = true,
+                    explanations = emptyMap(),
+                    source = "fallback",
+                    model = null,
+                    error = "bad_nodes",
+                )
+            }
+        if (nodes.length() == 0) {
+            return CfaMapExplainResult(false, aiOn = true, explanations = emptyMap(), source = "fallback", model = null, error = "no_nodes")
+        }
+        val body = JSONObject().put("nodes", nodes).toString()
+        return try {
+            val (status, resp) = poster.post("${baseUrl.trimEnd('/')}/cfa/mapexplain", token, body)
+            if (status != 200) {
+                return CfaMapExplainResult(
+                    false,
+                    aiOn = true,
+                    explanations = emptyMap(),
+                    source = "fallback",
+                    model = null,
+                    error = "http_$status",
+                )
+            }
+            val o = JSONObject(resp)
+            val map = mutableMapOf<String, String>()
+            val expl = o.optJSONObject("explanations")
+            if (expl != null) {
+                val it = expl.keys()
+                while (it.hasNext()) {
+                    val k = it.next()
+                    val v = expl.optString(k, "")
+                    if (v.isNotBlank()) map[k] = v
+                }
+            }
+            CfaMapExplainResult(
+                ok = o.optBoolean("ok", false),
+                aiOn = true,
+                explanations = map,
+                source = o.optString("source", "fallback"),
+                model = o.optString("model", "").ifBlank { null },
+                error = o.optString("error", "").ifBlank { null },
+            )
+        } catch (e: Exception) {
+            CfaMapExplainResult(
+                false,
+                aiOn = true,
+                explanations = emptyMap(),
+                source = "fallback",
+                model = null,
+                error = "client_error:${e.javaClass.simpleName}",
+            )
+        }
+    }
 
     /**
      * Bidirectional tab-fill via the proxy configured in [col]: send both sides,

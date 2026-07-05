@@ -150,4 +150,34 @@ class CfaConceptMapTest {
         // A discoverable always-visible unpin hint must be present.
         assertThat(html, containsString("to unpin"))
     }
+
+    /**
+     * Regression guard for the SINGLE batched AI explanation (parity with the
+     * desktop pycmd cfaExplainMap bridge + iteration 2). The map must, on load,
+     * hand its node list to the host bridge and expose a callback the Activity
+     * invokes with the result, then honour 3-state provenance (AI-generated / AI
+     * off / AI failed). Previously the asset hard-coded "AI off — deterministic
+     * templated explanation" and never made any call, breaking cross-platform
+     * parity with the desktop concept map.
+     */
+    @Test
+    fun concept_map_asset_makes_the_single_batched_ai_call() {
+        val candidates =
+            listOf(
+                File("src/main/assets/cfa/concept_map.html"),
+                File("AnkiDroid/src/main/assets/cfa/concept_map.html"),
+            )
+        val asset = candidates.firstOrNull { it.exists() }
+        assertThat("concept_map.html asset must exist for this guard", asset != null, equalTo(true))
+        val html = asset!!.readText()
+        // It fires the batched call via the host bridge and defines the callback.
+        assertThat(html, containsString("AndroidCfaMap.explainMap"))
+        assertThat(html, containsString("window.cfaApplyMapExplain"))
+        // Nodes carry the desktop id scheme so ids match across platforms.
+        assertThat(html, containsString("\"topic:\"+tp.slug"))
+        assertThat(html, containsString("\"sub:\"+tp.slug"))
+        // Honest 3-state provenance replaces the old hard-coded "AI off" text.
+        assertThat(html, containsString("AI-generated"))
+        assertThat(html, containsString("AI failed"))
+    }
 }

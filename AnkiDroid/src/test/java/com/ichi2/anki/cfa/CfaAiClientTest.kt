@@ -258,6 +258,92 @@ class CfaAiClientTest {
         assertThat(r.itemId, equalTo("pair-3"))
     }
 
+    // ----- Concept Map: the SINGLE batched explanation (POST /cfa/mapexplain) -----
+
+    private val nodesJson =
+        """[{"id":"cfa","full":"Overall CFA readiness","kind":"cfa","pct":58,"band":null,"parent":null},
+            {"id":"topic:equity","full":"Equity Investments","kind":"topic","pct":62,"band":"10-15%","parent":null},
+            {"id":"topic:fixed-income","full":"Fixed Income","kind":"topic","pct":null,"band":"10-15%","parent":null}]"""
+
+    @Test
+    fun map_explain_parses_batched_result() {
+        val poster =
+            CfaHttpPost { _, _, _ ->
+                200 to
+                    """{"ok":true,"source":"ai","model":"gpt-4o-mini","error":null,"count":2,
+                        "explanations":{"cfa":"You're about 58% overall.","topic:equity":"Equity is at 62%."}}"""
+            }
+        val r = CfaAiClient.explainMap("http://x", "t", nodesJson, poster)
+        assertThat(r.ok, equalTo(true))
+        assertThat(r.source, equalTo("ai"))
+        assertThat(r.model, equalTo("gpt-4o-mini"))
+        assertThat(r.explanations["cfa"], equalTo("You're about 58% overall."))
+        assertThat(r.explanations["topic:equity"], equalTo("Equity is at 62%."))
+        assertThat(r.explanations.size, equalTo(2))
+    }
+
+    @Test
+    fun map_explain_sends_bearer_token_route_and_nodes() {
+        var seenUrl = ""
+        var seenAuth = ""
+        var seenBody = ""
+        val spy =
+            CfaHttpPost { url, token, body ->
+                seenUrl = url
+                seenAuth = token
+                seenBody = body
+                200 to """{"ok":true,"source":"ai","explanations":{"cfa":"x"}}"""
+            }
+        CfaAiClient.explainMap("http://host:27702/", "secret", nodesJson, spy)
+        assertThat(seenUrl, equalTo("http://host:27702/cfa/mapexplain"))
+        assertThat(seenAuth, equalTo("secret"))
+        assertThat(seenBody.contains("\"nodes\""), equalTo(true))
+        assertThat(seenBody.contains("topic:equity"), equalTo(true))
+    }
+
+    @Test
+    fun map_explain_falls_back_on_non_200() {
+        val r = CfaAiClient.explainMap("http://x", "t", nodesJson, CfaHttpPost { _, _, _ -> 500 to "" })
+        assertThat(r.ok, equalTo(false))
+        assertThat(r.source, equalTo("fallback"))
+        assertThat(r.error, equalTo("http_500"))
+        assertThat(r.explanations.isEmpty(), equalTo(true))
+    }
+
+    @Test
+    fun map_explain_falls_back_on_exception() {
+        val r =
+            CfaAiClient.explainMap("http://x", "t", nodesJson, CfaHttpPost { _, _, _ -> throw RuntimeException("net") })
+        assertThat(r.source, equalTo("fallback"))
+        assertThat(r.error?.startsWith("client_error:"), equalTo(true))
+    }
+
+    @Test
+    fun map_explain_rejects_empty_or_bad_nodes_without_network() {
+        var called = false
+        val spy =
+            CfaHttpPost { _, _, _ ->
+                called = true
+                200 to "{}"
+            }
+        val empty = CfaAiClient.explainMap("http://x", "t", "[]", spy)
+        assertThat(empty.error, equalTo("no_nodes"))
+        val bad = CfaAiClient.explainMap("http://x", "t", "not json", spy)
+        assertThat(bad.error, equalTo("bad_nodes"))
+        // Neither malformed request touched the network.
+        assertThat(called, equalTo(false))
+    }
+
+    @Test
+    fun ai_off_map_explain_is_honest_and_reports_ai_off() {
+        val r = CfaAiClient.aiOffMapExplain()
+        assertThat(r.ok, equalTo(false))
+        assertThat(r.aiOn, equalTo(false))
+        assertThat(r.source, equalTo("fallback"))
+        assertThat(r.error, equalTo("ai_off"))
+        assertThat(r.explanations.isEmpty(), equalTo(true))
+    }
+
     @Test
     fun grade_propagates_server_fallback_when_ai_off() {
         val r =

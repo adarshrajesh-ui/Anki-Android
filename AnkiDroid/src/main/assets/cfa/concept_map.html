@@ -151,6 +151,15 @@
   var DATA = (typeof window.CFA_MAP_DATA === "object" && window.CFA_MAP_DATA) || {};
   var SLUGS = DATA.slugs || {};
   var SOURCE = DATA.source || "fallback";
+
+  // The SINGLE batched AI explanation (parity with the desktop pycmd bridge):
+  // when the tab opens we hand the host Activity the node list and it answers,
+  // in ONE proxy call, with an id -> plain-English "why" map. Until then (and
+  // whenever AI is off or the call fails) the deterministic templated wording is
+  // shown, with honest provenance. states: pending|loading|on|off|failed.
+  var AI = { state: "pending", byId: {}, error: null };
+  var NODEDEFS = [];        // {id, full, kind, pct, band, parent} for the batched call
+  var pinnedNode = null;    // the currently-pinned node (re-rendered when AI lands)
   function masteryFor(slug){
     if (!SLUGS.hasOwnProperty(slug)) return null;
     var v = SLUGS[slug];
@@ -173,6 +182,9 @@
   // Templated, plain-English "why" (the AI-off fallback — verbatim parity with
   // the desktop templatedExplanation, incl. the honest give-up wording).
   function explain(node){
+    // Prefer the batched AI wording for this node when it has arrived; otherwise
+    // fall through to the deterministic templated explanation below.
+    if (AI.state==="on" && node.id && AI.byId.hasOwnProperty(node.id)) return AI.byId[node.id];
     var kind=node.kind, full=node.full, m=node.m, pct=node.pct, parent=node.parent;
     if (m === null || pct === null){
       if (kind==="cfa") return "Your overall readiness is still gray — there aren't enough graded reviews yet to roll up an honest number. Study a few sections and this centre node starts to fill. (The give-up rule: no evidence, no fake confidence.)";
@@ -194,6 +206,9 @@
 
   function addNode(node){
     var x=node.x, y=node.y, r=node.r, m=node.m, kind=node.kind;
+    // Record this node for the batched AI call, keyed by the SAME id scheme the
+    // desktop uses (cfa / topic:<slug> / sub:<slug>:<name>) so ids match.
+    NODEDEFS.push({ id:node.id, full:node.full, kind:node.kind, pct:node.pct, band:node.band||null, parent:node.parent||null });
     uid++; var cid="clip"+uid;
     var cp=el("clipPath",{id:cid}); cp.appendChild(el("circle",{cx:x,cy:y,r:r})); defs.appendChild(cp);
     var g=el("g",{"class":"node"});
@@ -242,6 +257,7 @@
   function hideTip(){ tip.setAttribute("opacity","0"); tip.setAttribute("transform","translate(-4000,-4000)"); }
 
   function setPanel(node){
+    pinnedNode=node;
     var pct=node.pct, m=node.m, kind=node.kind;
     document.getElementById("p-eb").textContent = kind==="cfa"?"Overall":(kind==="sub"?("Subsection · "+node.parent):"Test section");
     document.getElementById("p-title").textContent=node.name;
@@ -270,11 +286,34 @@
 
   function renderAiTag(){
     var ai=document.getElementById("p-ai");
-    // Honest provenance: this build serves the deterministic templated
-    // explanation (the AI-off fallback). Say so plainly rather than implying a
-    // live model wrote it.
-    ai.textContent = "AI off — deterministic templated explanation from your performance data. (Source: " + SOURCE + ".)";
+    if (!ai) return;
+    // Honest provenance — say plainly WHICH grader produced the wording, never
+    // imply a live model when it was templated (parity with the desktop 4-state
+    // provenance line). "on" only after the batched AI call actually returned.
+    if (AI.state==="on"){
+      ai.textContent = "✦ AI-generated — a live model wrote this from your performance data in one batched call.";
+    } else if (AI.state==="loading"){
+      ai.textContent = "Generating a plain-English explanation… (templated wording shown until it arrives).";
+    } else if (AI.state==="failed"){
+      ai.textContent = "AI failed — showing the deterministic templated explanation instead. (Reason: " + (AI.error||"unavailable") + ".)";
+    } else {
+      ai.textContent = "AI off — deterministic templated explanation from your performance data. (Source: " + SOURCE + ".)";
+    }
   }
+
+  // The host Activity calls this once with the batched-call result:
+  // {ok, aiOn, explanations:{id:text}, error}. Store the wording, set honest
+  // provenance, and re-render the pinned node (or the placeholder tag) in place.
+  window.cfaApplyMapExplain = function(res){
+    try {
+      res = res || {};
+      if (res.aiOn === false){ AI.state="off"; }
+      else if (res.ok && res.explanations && typeof res.explanations==="object" &&
+               Object.keys(res.explanations).length){ AI.byId=res.explanations; AI.state="on"; }
+      else { AI.state="failed"; AI.error=res.error || "ai_unavailable"; }
+    } catch(e){ AI.state="failed"; AI.error="apply_error"; }
+    if (pinnedNode){ setPanel(pinnedNode); } else { renderAiTag(); }
+  };
 
   // Snapshot of the calm placeholder panel (captured at the end of build, after
   // the initial renderAiTag), so unpinning restores the exact initial state
@@ -283,7 +322,7 @@
   function clearSel(){ var sel=document.querySelectorAll(".node.sel"); for(var i=0;i<sel.length;i++) sel[i].classList.remove("sel"); }
   // Unpin: drop the .sel highlight and put the panel back to its placeholder so a
   // user is never stuck on one node's explanation (matches desktop D-P4-5).
-  function resetPanel(){ document.getElementById("panel").innerHTML=PANEL_INIT; }
+  function resetPanel(){ document.getElementById("panel").innerHTML=PANEL_INIT; pinnedNode=null; renderAiTag(); }
   // Esc unpins from anywhere (the keyboard "emergency exit"), mirroring desktop.
   document.addEventListener("keydown",function(e){
     if ((e.key==="Escape"||e.key==="Esc") && document.querySelector(".node.sel")){
@@ -306,16 +345,30 @@
   });
   TOPICS.forEach(function(tp){
     tp.subs.forEach(function(s){
-      addNode({ x:s._x, y:s._y, r:subR(tp.w), m:tp._m, pct:pctOf(tp._m), name:s[0], full:s[0], kind:"sub", parent:tp.full, band:null, persistentLabel:false, labelAngle:s._a });
+      addNode({ id:"sub:"+tp.slug+":"+s[0], x:s._x, y:s._y, r:subR(tp.w), m:tp._m, pct:pctOf(tp._m), name:s[0], full:s[0], kind:"sub", parent:tp.full, band:null, persistentLabel:false, labelAngle:s._a });
     });
   });
   TOPICS.forEach(function(tp){
-    addNode({ x:tp._x, y:tp._y, r:tp._r, m:tp._m, pct:pctOf(tp._m), name:tp.k, full:tp.full, kind:"topic", parent:null, band:tp.band, persistentLabel:true, labelAngle:tp._a });
+    addNode({ id:"topic:"+tp.slug, x:tp._x, y:tp._y, r:tp._r, m:tp._m, pct:pctOf(tp._m), name:tp.k, full:tp.full, kind:"topic", parent:null, band:tp.band, persistentLabel:true, labelAngle:tp._a });
   });
   var cm=overall();
-  addNode({ x:CX, y:CY, r:RC, m:cm, pct:pctOf(cm), name:"CFA", full:"Overall CFA readiness", kind:"cfa", parent:null, band:null, persistentLabel:false, labelAngle:0 });
+  addNode({ id:"cfa", x:CX, y:CY, r:RC, m:cm, pct:pctOf(cm), name:"CFA", full:"Overall CFA readiness", kind:"cfa", parent:null, band:null, persistentLabel:false, labelAngle:0 });
   renderAiTag();
   PANEL_INIT = document.getElementById("panel").innerHTML;
+
+  // Fire the SINGLE batched AI explanation call on load (parity with desktop).
+  // The host Activity's AndroidCfaMap bridge answers via window.cfaApplyMapExplain.
+  // With no bridge (e.g. opened standalone) or AI off, the templated wording
+  // stays and provenance says so.
+  (function requestExplain(){
+    if (window.AndroidCfaMap && typeof window.AndroidCfaMap.explainMap === "function"){
+      AI.state="loading"; renderAiTag();
+      try { window.AndroidCfaMap.explainMap(JSON.stringify(NODEDEFS)); }
+      catch(e){ AI.state="failed"; AI.error="bridge_error"; renderAiTag(); }
+    } else {
+      AI.state="off"; renderAiTag();
+    }
+  })();
 })();
 </script>
 </body>

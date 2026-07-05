@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later
+     CFA fork — the mobile AI Settings screen: the phone's equivalent of the
+     desktop `cfa_ai_settings.py` dialog. Three toggles (a MASTER switch + one per
+     AI feature) over the SAME synced col.conf keys the desktop writes, so a change
+     here is honoured on the desktop after a sync. Rendered from injected
+     `window.CFA_AI_SETTINGS = {master, grading, tabfill}`; each switch calls the
+     `AndroidCfaAiSettings` @JavascriptInterface bridge to persist. Uses the SAME
+     CFA design tokens the Home / Concept Map / Readiness assets do, so all four
+     surfaces read as one product. The phone NEVER holds the OpenAI key — AI runs
+     via the desktop proxy — so the copy explains that, and every feature still
+     degrades to its deterministic fallback with AI off. -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=4, user-scalable=yes" />
+<title>ankiCFA — AI Settings</title>
+<style>
+  :root{
+    --ink:#122B46; --muted:#4D5C6D; --faint:#68707D;
+    --line:#E7EBEF; --surface:#F3F6F8; --bg:#ffffff;
+    --navy:#122B46; --accent:#DA5C01; --accent-soft:#FCEBDA; --accent-ink:#A84500;
+    --warn:#B45309; --warn-soft:#FDF3E7; --green:#007E56;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; padding:0;}
+  body{font-family:var(--sans); color:var(--ink); background:var(--surface); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;}
+  .wrap{max-width:820px; margin:0 auto; padding:18px 16px 44px;}
+
+  .eyebrow{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--green);}
+  h1{font-size:24px; font-weight:700; line-height:1.12; margin:4px 0 6px; letter-spacing:-.01em;}
+  .lede{font-size:13.5px; color:var(--muted); margin:0 0 20px; line-height:1.5;}
+
+  /* Master card — the one switch that takes the whole app offline. */
+  .rows{display:flex; flex-direction:column; gap:12px;}
+  .row{display:flex; align-items:flex-start; gap:14px; background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:15px 16px;}
+  .row.is-master{border-left:4px solid var(--navy);}
+  .row-body{flex:1 1 auto; min-width:0;}
+  .row-label{font-size:15px; font-weight:600; color:var(--ink);}
+  .row-sub{font-size:12.5px; color:var(--muted); margin-top:3px; line-height:1.45;}
+  .row.is-disabled{opacity:.55;}
+  .row.is-disabled .row-label{color:var(--faint);}
+
+  /* Accessible toggle switch (native checkbox, styled). */
+  .sw{position:relative; flex:0 0 auto; width:46px; height:28px; margin-top:1px;}
+  .sw input{position:absolute; inset:0; margin:0; opacity:0; width:100%; height:100%; cursor:pointer;}
+  .sw .track{position:absolute; inset:0; border-radius:100px; background:var(--line); border:1px solid #D4DAE0; transition:background .15s ease, border-color .15s ease;}
+  .sw .knob{position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.25); transition:transform .15s ease;}
+  .sw input:checked ~ .track{background:var(--green); border-color:var(--green);}
+  .sw input:checked ~ .knob{transform:translateX(18px);}
+  .sw input:focus-visible ~ .track{outline:2px solid var(--accent); outline-offset:2px;}
+  .sw input:disabled{cursor:default;}
+
+  .note{margin-top:18px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:13px 15px; font-size:12.5px; color:var(--muted); line-height:1.5;}
+  .note b{color:var(--ink); font-weight:600;}
+  .state{font-size:11.5px; color:var(--faint); margin-top:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">ankiCFA · Level II</div>
+  <h1>AI Settings</h1>
+  <p class="lede">The two optional AI features. Each has its own switch and works with AI off — turn a switch off and that feature falls back to its deterministic result, honestly labelled.</p>
+
+  <div class="rows">
+    <div class="row is-master" id="row-master">
+      <div class="row-body">
+        <div class="row-label">AI features</div>
+        <div class="row-sub">Master switch. Off = the whole app runs offline: honest deterministic ethics grades and no AI drafting.</div>
+      </div>
+      <label class="sw"><input type="checkbox" id="tg-master" aria-label="AI features master switch" /><span class="track"></span><span class="knob"></span></label>
+    </div>
+
+    <div class="row" id="row-grading">
+      <div class="row-body">
+        <div class="row-label">AI ethics grading</div>
+        <div class="row-sub">Grades your ethics highlight semantically with partial-credit tiers and cites the governing Standard. Off = the deterministic exact-phrase grade.</div>
+      </div>
+      <label class="sw"><input type="checkbox" id="tg-grading" aria-label="AI ethics grading switch" /><span class="track"></span><span class="knob"></span></label>
+    </div>
+
+    <div class="row" id="row-tabfill">
+      <div class="row-body">
+        <div class="row-label">AI tab-to-fill</div>
+        <div class="row-sub">The ✦ button in the card editor drafts the Back from the Front. Off = the button is inert and no draft is generated.</div>
+      </div>
+      <label class="sw"><input type="checkbox" id="tg-tabfill" aria-label="AI tab-to-fill switch" /><span class="track"></span><span class="knob"></span></label>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Your key stays on the desktop.</b> The phone never holds the OpenAI key — it calls your desktop's AI proxy, so AI grading and drafting only reach the model while that proxy is running. When it can't, the feature degrades to its deterministic fallback and says so.
+  </div>
+  <div class="state" id="state"></div>
+</div>
+
+<script>window.CFA_AI_SETTINGS={"master":false,"grading":true,"tabfill":true};</script>
+<script>
+(function () {
+  var KEYS = { master: "cfa_ai_enabled", grading: "cfa_ai_grading_enabled", tabfill: "cfa_ai_tabfill_enabled" };
+  // Default ON (AI-first), matching the desktop `get_ai_toggles`.
+  var DATA = window.CFA_AI_SETTINGS || { master: true, grading: true, tabfill: true };
+
+  var master = document.getElementById("tg-master");
+  var grading = document.getElementById("tg-grading");
+  var tabfill = document.getElementById("tg-tabfill");
+
+  master.checked = DATA.master !== false;
+  grading.checked = DATA.grading !== false;
+  tabfill.checked = DATA.tabfill !== false;
+
+  // A feature's AI path runs only when MASTER *and* its own switch are on
+  // (desktop `ai_active`), so grey out + disable the feature rows when master is
+  // off — their stored value is kept, they just can't take effect.
+  function reflectMaster() {
+    var on = master.checked;
+    ["grading", "tabfill"].forEach(function (id) {
+      document.getElementById("row-" + id).className = "row" + (on ? "" : " is-disabled");
+    });
+    grading.disabled = !on;
+    tabfill.disabled = !on;
+    document.getElementById("state").textContent = on
+      ? "AI is on. Individual features run only when both this and their own switch are on."
+      : "AI is off — every feature is using its deterministic fallback.";
+  }
+
+  function persist(key, on) {
+    try {
+      if (window.AndroidCfaAiSettings && window.AndroidCfaAiSettings.setToggle) {
+        window.AndroidCfaAiSettings.setToggle(key, on);
+      }
+    } catch (e) { /* bridge absent (e.g. desktop preview) — no-op */ }
+  }
+
+  master.addEventListener("change", function () { persist(KEYS.master, master.checked); reflectMaster(); });
+  grading.addEventListener("change", function () { persist(KEYS.grading, grading.checked); });
+  tabfill.addEventListener("change", function () { persist(KEYS.tabfill, tabfill.checked); });
+
+  reflectMaster();
+})();
+</script>
+</body>
+</html>

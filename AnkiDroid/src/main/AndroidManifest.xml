@@ -342,6 +342,13 @@
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:parentActivityName=".DeckPicker"
             />
+        <!-- CFA fork: the mobile AI Settings screen (the two AI feature toggles). -->
+        <activity
+            android:name="com.ichi2.anki.CfaAiSettingsActivity"
+            android:exported="false"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:parentActivityName=".CfaHomeActivity"
+            />
 
         <!-- Context menu item name is the label, context is the system language -->
         <!-- Note: This appears to require that the target label is variable -->

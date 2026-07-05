@@ -25,6 +25,7 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.appcompat.widget.Toolbar
 import com.ichi2.anki.CollectionManager.withCol
+import com.ichi2.anki.cfa.CfaAiSettings
 import com.ichi2.anki.cfa.CfaExamConfig
 import com.ichi2.anki.cfa.CfaHome
 import com.ichi2.anki.cfa.CfaScoresProvider
@@ -76,9 +77,14 @@ class CfaHomeActivity : AnkiActivity(R.layout.activity_cfa_home) {
      */
     private fun loadHome() {
         launchCatchingTask {
+            // The master AI state drives the Home footer AI chip (default ON,
+            // AI-first) — read alongside the scores so the chip matches the
+            // synced toggle without a second collection round-trip.
+            var aiEnabled = true
             val payload =
                 try {
                     withCol {
+                        aiEnabled = CfaAiSettings.masterEnabled(this)
                         val scores = CfaScoresProvider.scores(this)
                         val examDate = CfaExamConfig.read(this)?.examDate
                         val days = CfaExamConfig.daysUntil(examDate, LocalDate.now(ZoneOffset.UTC))
@@ -90,7 +96,11 @@ class CfaHomeActivity : AnkiActivity(R.layout.activity_cfa_home) {
                     JSONObject().put("scores", org.json.JSONArray()).put("source", "unavailable").toString()
                 }
             val html = assets.open("cfa/home.html").bufferedReader().use { it.readText() }
-            val injected = html.replaceFirst("<script>", "<script>window.CFA_HOME_DATA=$payload;</script>\n<script>")
+            val injected =
+                html.replaceFirst(
+                    "<script>",
+                    "<script>window.CFA_HOME_DATA=$payload;window.CFA_AI_ENABLED=$aiEnabled;</script>\n<script>",
+                )
             webView.loadDataWithBaseURL(
                 "file:///android_asset/cfa/",
                 injected,
@@ -118,6 +128,7 @@ class CfaHomeActivity : AnkiActivity(R.layout.activity_cfa_home) {
                     "ethics" -> activity.startActivity(CfaEthicsStudyActivity.getIntent(activity))
                     "readiness" -> activity.startActivity(CfaExamReadinessActivity.getIntent(activity))
                     "conceptmap" -> activity.startActivity(CfaConceptMapActivity.getIntent(activity))
+                    "aiSettings" -> activity.startActivity(CfaAiSettingsActivity.getIntent(activity))
                     "priority" -> activity.startActivity(Intent(activity, CfaExamPriorityActivity::class.java))
                     "decks" -> {
                         val deckPicker = Intent(activity, DeckPicker::class.java)

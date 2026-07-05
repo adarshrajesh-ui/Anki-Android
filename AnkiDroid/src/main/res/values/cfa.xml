@@ -83,6 +83,7 @@
     <string name="cfa_title_concept_map" comment="Action-bar title of the Concept Map screen">Concept Map</string>
     <string name="cfa_nav_home" comment="Nav-drawer menu entry that opens the CFA Home / Today dashboard (the native CFA landing screen)" maxLength="28">Home</string>
     <string name="cfa_title_home" comment="Action-bar title of the CFA Home / Today dashboard screen">Exam Home</string>
+    <string name="cfa_title_ai_settings" comment="Action-bar title of the AI Settings screen (the two optional AI feature toggles)">AI Settings</string>
     <!-- CFA fork: nav-drawer entries for the two study drills, giving the phone
          the same native Home / Study / Ethics / Concept Map / Readiness nav the
          desktop top bar has (previously reachable only from the Home dashboard). -->

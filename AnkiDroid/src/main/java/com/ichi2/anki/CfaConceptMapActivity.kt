@@ -21,11 +21,16 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.appcompat.widget.Toolbar
 import com.ichi2.anki.CollectionManager.withCol
+import com.ichi2.anki.cfa.CfaAiClient
 import com.ichi2.anki.cfa.CfaConceptMap
+import com.ichi2.anki.cfa.CfaMapExplainResult
 import com.ichi2.anki.cfa.CfaScoresProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import timber.log.Timber
 
@@ -55,6 +60,10 @@ class CfaConceptMapActivity : AnkiActivity(R.layout.activity_cfa_concept_map) {
             useWideViewPort = true
             loadWithOverviewMode = true
         }
+        // The SINGLE batched AI explanation call (parity with the desktop pycmd
+        // cfaExplainMap bridge): the map JS, once built, hands us its node list and
+        // we answer with an id -> plain-English "why" map from ONE proxy call.
+        webView.addJavascriptInterface(CfaMapBridge(this), "AndroidCfaMap")
         loadMap()
     }
 
@@ -99,6 +108,62 @@ class CfaConceptMapActivity : AnkiActivity(R.layout.activity_cfa_concept_map) {
                 "utf-8",
                 null,
             )
+        }
+    }
+
+    /**
+     * Answer one batched-explanation request from the map JS. Reads the proxy
+     * config + synced master AI toggle off the collection thread (fast), then does
+     * the network POST off the collection thread so a slow/absent proxy never
+     * blocks the collection. Marshals the result back into the WebView via
+     * `window.cfaApplyMapExplain(...)`. Never throws — on any failure the map keeps
+     * its deterministic templated wording and shows honest "AI failed" provenance.
+     */
+    private fun requestExplain(nodesJson: String) {
+        launchCatchingTask {
+            val result: CfaMapExplainResult =
+                try {
+                    val cfg =
+                        withCol {
+                            Triple(
+                                CfaAiClient.mapExplainEnabled(this),
+                                CfaAiClient.proxyUrl(this),
+                                CfaAiClient.proxyToken(this),
+                            )
+                        }
+                    if (!cfg.first) {
+                        CfaAiClient.aiOffMapExplain()
+                    } else {
+                        withContext(Dispatchers.IO) {
+                            CfaAiClient.explainMap(cfg.second, cfg.third, nodesJson, CfaAiClient.DEFAULT_POST)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e, "CFA concept-map explain failed")
+                    CfaMapExplainResult(false, aiOn = true, emptyMap(), "fallback", null, "client_error")
+                }
+            val json =
+                JSONObject()
+                    .put("ok", result.ok)
+                    .put("aiOn", result.aiOn)
+                    .put("error", result.error ?: JSONObject.NULL)
+                    .put("explanations", JSONObject(result.explanations as Map<*, *>))
+                    .toString()
+            webView.evaluateJavascript("window.cfaApplyMapExplain($json)", null)
+        }
+    }
+
+    /**
+     * The @JavascriptInterface the map asset calls once, on load, with its node
+     * list. Marshals onto the UI thread (it runs on a private WebView thread) and
+     * kicks off the single batched call.
+     */
+    class CfaMapBridge(
+        private val activity: CfaConceptMapActivity,
+    ) {
+        @JavascriptInterface
+        fun explainMap(nodesJson: String) {
+            activity.runOnUiThread { activity.requestExplain(nodesJson) }
         }
     }
 
