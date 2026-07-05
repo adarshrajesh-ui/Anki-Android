@@ -18,22 +18,22 @@
 <title>ankiCFA — Exam Home</title>
 <style>
   :root{
-    --ink:#122B46; --muted:#4D5C6D; --faint:#68707D;
-    --line:#E7EBEF; --surface:#F3F6F8; --bg:#ffffff;
-    --navy:#122B46; --accent:#DA5C01; --accent-soft:#FCEBDA; --accent-ink:#A84500;
-    --warn:#B45309; --warn-soft:#FDF3E7; --green:#007E56;
+    --ink:#F5F2E8; --muted:#A8ACB8; --faint:#737987;
+    --line:rgba(255,255,255,.12); --surface:#07080B; --bg:#10131A;
+    --panel-2:#151925; --navy:#D9AA4F; --accent:#D9AA4F; --accent-soft:rgba(217,170,79,.14); --accent-ink:#F0CF80;
+    --warn:#F0CF80; --warn-soft:rgba(217,170,79,.10); --green:#F0CF80;
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   }
   *{box-sizing:border-box;}
   html,body{margin:0; padding:0;}
-  body{font-family:var(--sans); color:var(--ink); background:var(--surface); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;}
+  body{font-family:var(--sans); color:var(--ink); background:radial-gradient(circle at 12% -8%,rgba(217,170,79,.18),transparent 34rem),radial-gradient(circle at 100% 0,rgba(122,167,255,.10),transparent 28rem),var(--surface); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;}
   .wrap{max-width:820px; margin:0 auto; padding:18px 16px 44px;}
 
   .eyebrow{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--green);}
   h1{font-size:24px; font-weight:700; line-height:1.12; margin:4px 0 16px; letter-spacing:-.01em;}
 
   /* Countdown hero — a flat, hairline card with a tone-coloured spine. */
-  .hero{background:var(--bg); border:1px solid var(--line); border-left:4px solid var(--navy); border-radius:12px; padding:16px 18px; margin:0 0 22px;}
+  .hero{background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02)),var(--bg); border:1px solid var(--line); border-left:4px solid var(--navy); border-radius:16px; padding:16px 18px; margin:0 0 22px; box-shadow:0 16px 40px rgba(0,0,0,.28);}
   .hero.is-warn{border-left-color:var(--warn); background:var(--warn-soft);}
   .hero .h-head{font-size:20px; font-weight:600; line-height:1.2;}
   .hero.is-warn .h-head{color:var(--warn);}
@@ -45,7 +45,7 @@
 
   /* Three value-first stat cards, responsive. */
   .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;}
-  .stat{background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:14px 15px;}
+  .stat{background:var(--bg); border:1px solid var(--line); border-radius:14px; padding:14px 15px;}
   .stat .s-val{font-size:22px; font-weight:600; line-height:1.15; letter-spacing:-.01em;}
   .stat.is-muted .s-val{color:var(--faint); font-size:16px; font-weight:600;}
   .stat .s-name{display:block; font-size:12.5px; font-weight:600; color:var(--muted); margin-top:8px;}
@@ -54,18 +54,18 @@
   .cap{font-size:11.5px; color:var(--faint); margin:10px 0 0; line-height:1.4;}
 
   /* Sync/account card. */
-  .sync-card{display:flex; align-items:center; justify-content:space-between; gap:14px; background:var(--bg); border:1px solid var(--line); border-left:4px solid var(--navy); border-radius:12px; padding:15px 16px; margin:0 0 24px;}
+  .sync-card{display:flex; align-items:center; justify-content:space-between; gap:14px; background:var(--bg); border:1px solid var(--line); border-left:4px solid var(--navy); border-radius:16px; padding:15px 16px; margin:0 0 24px; box-shadow:0 14px 34px rgba(0,0,0,.22);}
   .sync-title{font-size:18px; font-weight:600; line-height:1.2; margin-top:2px;}
   .sync-meta{display:flex; flex-wrap:wrap; gap:6px; color:var(--muted); font-size:11.5px; line-height:1.35; margin-top:6px;}
   .sync-meta span:not(:last-child)::after{content:"·"; margin-left:6px; color:var(--faint);}
-  .sync-action{flex:0 0 auto; border:1px solid var(--navy); border-radius:100px; background:var(--navy); color:#fff; font-family:var(--sans); font-size:12.5px; font-weight:600; padding:9px 14px; cursor:pointer; -webkit-appearance:none;}
-  .sync-action:active{background:#0E2238;}
+  .sync-action{flex:0 0 auto; border:1px solid var(--navy); border-radius:100px; background:var(--navy); color:var(--surface); font-family:var(--sans); font-size:12.5px; font-weight:700; padding:9px 14px; cursor:pointer; -webkit-appearance:none;}
+  .sync-action:active{background:var(--accent-ink);}
   @media (max-width:420px){.sync-card{align-items:stretch; flex-direction:column;}.sync-action{width:100%;}}
 
   /* Study CTA grid. */
   .ctas{display:grid; grid-template-columns:1fr; gap:10px;}
-  .cta{display:block; width:100%; text-align:left; background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:14px 15px; cursor:pointer; font-family:var(--sans); color:var(--ink); -webkit-appearance:none;}
-  .cta:active{background:var(--surface);}
+  .cta{display:block; width:100%; text-align:left; background:var(--bg); border:1px solid var(--line); border-radius:14px; padding:14px 15px; cursor:pointer; font-family:var(--sans); color:var(--ink); -webkit-appearance:none;}
+  .cta:active{background:var(--panel-2);}
   /* Featured/primary drill — the warm accent-soft tile, matching the desktop
      CfaHomePage `.cfa-home__cta.is-primary` (one consistent design system). */
   .cta.is-primary{background:var(--accent-soft); border-color:var(--accent);}
@@ -75,7 +75,7 @@
   .cta .c-sub{display:block; font-size:12.5px; color:var(--muted); margin-top:2px;}
 
   .foot{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:8px;}
-  .chip{display:inline-block; font-size:11px; font-weight:600; color:var(--muted); background:var(--surface); border:1px solid var(--line); border-radius:100px; padding:4px 11px;}
+  .chip{display:inline-block; font-size:11px; font-weight:600; color:var(--muted); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:100px; padding:4px 11px;}
   /* Tappable AI-state chip → opens the AI Settings screen (parity with the
      desktop CfaHomePage `.cfa-home__chip`). Green border+ink when AI is on. */
   .chip-btn{font-family:var(--sans); cursor:pointer; background:var(--bg); -webkit-appearance:none;}

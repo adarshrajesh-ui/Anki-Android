@@ -145,7 +145,7 @@ class CfaContrastTest {
     // ---- Regression guard: the three repointed text views use AA-safe tokens ----
 
     @Test
-    fun `config eyebrows, countdown and tagline use AA-safe accent-text tokens`() {
+    fun `night shell config and drawer use AA-safe gold text tokens`() {
         val res = findResDir()
 
         fun read(rel: String) = java.io.File(res, rel).readText()
@@ -153,10 +153,11 @@ class CfaContrastTest {
         val config = read("layout/activity_cfa_exam_config.xml")
         val drawer = read("layout/view_navdrawer_header.xml")
 
-        // The eyebrow / countdown TextViews on the LIGHT config screen must use the
-        // dark AA-safe accent-ink; neither native screen may bind the raw accent.
-        assertThat("config uses accent_ink (eyebrow + countdown)", config.split("@color/cfa_accent_ink").size - 1, greaterThanOrEqualTo(2))
-        assertThat("drawer tagline must use accent_on_navy", drawer.contains("@color/cfa_accent_on_navy"), equalToTrue())
+        // Lane 4 moves these native CFA shells to the black/gold product theme.
+        // The eyebrow / countdown / drawer tagline must use the AA-safe light gold
+        // text token, not the raw warm accent.
+        assertThat("config uses gold_light (eyebrow + countdown)", config.split("@color/cfa_gold_light").size - 1, greaterThanOrEqualTo(2))
+        assertThat("drawer tagline must use gold_light", drawer.contains("@color/cfa_gold_light"), equalToTrue())
 
         // No CFA text view may bind the raw (AA-failing) accent as its textColor.
         for ((name, xml) in listOf("config" to config, "drawer" to drawer)) {

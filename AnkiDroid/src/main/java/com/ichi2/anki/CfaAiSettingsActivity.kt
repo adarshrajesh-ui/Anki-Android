@@ -41,6 +41,7 @@ class CfaAiSettingsActivity : AnkiActivity(R.layout.activity_cfa_ai_settings) {
             setDisplayHomeAsUpEnabled(true)
             title = getString(R.string.cfa_title_ai_settings)
         }
+        CfaShell.install(this, CfaShell.Tab.MORE)
 
         webView = findViewById(R.id.cfa_ai_settings_web)
         webView.settings.apply {

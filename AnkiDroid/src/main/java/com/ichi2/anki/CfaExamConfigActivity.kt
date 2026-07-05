@@ -39,6 +39,7 @@ class CfaExamConfigActivity : AnkiActivity(R.layout.activity_cfa_exam_config) {
             setDisplayHomeAsUpEnabled(true)
             title = getString(R.string.cfa_exam_config_title)
         }
+        CfaShell.install(this, CfaShell.Tab.MORE)
 
         val dateView = findViewById<TextView>(R.id.cfa_config_date_value)
         val countdownView = findViewById<TextView>(R.id.cfa_config_countdown)

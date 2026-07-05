@@ -50,6 +50,7 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
             setDisplayHomeAsUpEnabled(true)
             title = getString(R.string.cfa_title_exam_readiness)
         }
+        CfaShell.install(this, CfaShell.Tab.READINESS)
 
         webView = findViewById(R.id.cfa_readiness_web)
         webView.settings.apply {

@@ -8,7 +8,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="150dp"
-    android:background="@color/cfa_navy"
+    android:background="@color/cfa_night_bg"
     android:orientation="vertical"
     android:gravity="bottom"
     android:paddingStart="20dp"
@@ -19,7 +19,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/cfa_brand_wordmark"
-        android:textColor="@color/white"
+        android:textColor="@color/cfa_night_ink"
         android:textSize="26sp"
         android:textStyle="bold"
         android:letterSpacing="0.01" />
@@ -29,7 +29,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="3dp"
         android:text="@string/cfa_brand_tagline"
-        android:textColor="@color/cfa_accent_on_navy"
+        android:textColor="@color/cfa_gold_light"
         android:textSize="12sp"
         android:letterSpacing="0.08"
         android:textAllCaps="true" />

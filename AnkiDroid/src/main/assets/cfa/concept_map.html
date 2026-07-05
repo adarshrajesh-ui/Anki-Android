@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later
      CFA fork — Concept Map (mastery engine), the SAME self-contained radial map
      the desktop renders, so the tab is IDENTICAL on phone and desktop. Layout +
-     node SIZES (= exam weight) + the light-gray->turquoise fill mechanic + the
+     node SIZES (= exam weight) + the charcoal->gold fill mechanic + the
      templated (AI-off) explanations all match the approved spec
      (.lavish/concept-map-spec.html) and the desktop engine
      (ts/lib/cfa/pages/conceptmap.ts). The host Activity injects the learner's
@@ -16,15 +16,15 @@
 <title>ankiCFA — Concept Map</title>
 <style>
   :root{
-    --ink:#122B46; --muted:#4D5C6D; --faint:#8b97a4;
-    --line:#E7EBEF; --surface:#F3F6F8; --bg:#ffffff;
-    --turq:#14B8B1; --turq-deep:#0E9C97; --turq-soft:#E4F6F5;
-    --empty:#E9EDF1; --accent:#DA5C01;
+    --ink:#F5F2E8; --muted:#A8ACB8; --faint:#737987;
+    --line:rgba(255,255,255,.12); --surface:#07080B; --bg:#10131A;
+    --panel-2:#151925; --turq:#F0CF80; --turq-deep:#D9AA4F; --turq-soft:rgba(217,170,79,.14);
+    --empty:#252A34; --accent:#D9AA4F;
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   }
   *{box-sizing:border-box;}
   html,body{margin:0; padding:0;}
-  body{font-family:var(--sans); color:var(--ink); background:var(--surface); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;}
+  body{font-family:var(--sans); color:var(--ink); background:radial-gradient(circle at 12% -8%,rgba(217,170,79,.18),transparent 34rem),radial-gradient(circle at 100% 0,rgba(122,167,255,.10),transparent 28rem),var(--surface); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;}
   .wrap{max-width:1160px; margin:0 auto; padding:14px 14px 40px;}
   .eyebrow{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--turq-deep);}
   h1{font-family:var(--sans); font-size:22px; font-weight:700; line-height:1.15; margin:4px 0 6px; letter-spacing:-.01em;}
@@ -33,9 +33,9 @@
   .howto div{display:flex; gap:6px; align-items:center;}
   .howto b{color:var(--ink);}
   .pill{display:inline-block; padding:2px 9px; border-radius:100px; font-size:11px; font-weight:600; white-space:nowrap; background:var(--turq-soft); color:var(--turq-deep);}
-  .pill.soft{background:var(--bg); color:var(--muted); border:1px solid var(--line);}
+  .pill.soft{background:rgba(255,255,255,.04); color:var(--muted); border:1px solid var(--line);}
 
-  .mapbox{background:linear-gradient(180deg,#ffffff,#fbfdfd); border:1px solid var(--line); border-radius:16px; padding:6px; overflow:hidden; position:relative;}
+  .mapbox{background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02)),var(--bg); border:1px solid var(--line); border-radius:18px; padding:6px; overflow:hidden; position:relative; box-shadow:0 16px 40px rgba(0,0,0,.28);}
   .mapbox svg{width:100%; height:auto; display:block; touch-action:manipulation;}
   .node{cursor:pointer;}
   .node .rest{transition:opacity .18s ease;}
@@ -44,14 +44,14 @@
   .node.hot .rest,.node.sel .rest{opacity:0;}
   .node.hot .fillg,.node.sel .fillg{opacity:1;}
   .node.hot .ring,.node.sel .ring{opacity:1;}
-  .tlabel{font-family:var(--sans); font-size:12.5px; font-weight:600; fill:var(--ink); paint-order:stroke; stroke:#ffffff; stroke-width:3.2px; stroke-linejoin:round;}
-  .clabel{font-family:var(--sans); font-weight:700; fill:var(--ink); letter-spacing:.04em; paint-order:stroke; stroke:#ffffff; stroke-width:3px; stroke-linejoin:round;}
+  .tlabel{font-family:var(--sans); font-size:12.5px; font-weight:600; fill:var(--ink); paint-order:stroke; stroke:#07080B; stroke-width:3.2px; stroke-linejoin:round;}
+  .clabel{font-family:var(--sans); font-weight:700; fill:var(--ink); letter-spacing:.04em; paint-order:stroke; stroke:#07080B; stroke-width:3px; stroke-linejoin:round;}
   .legendrow{display:flex; align-items:center; gap:10px; padding:6px 10px 2px;}
   .legendbar{height:12px; border-radius:100px; background:linear-gradient(90deg,var(--empty),var(--turq)); border:1px solid var(--line); flex:1;}
   .meta{font-size:12px; color:var(--faint);}
   .mapcap{padding:2px 12px 6px; text-align:center;}
 
-  .panel{background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px; margin-top:14px; display:flex; flex-direction:column;}
+  .panel{background:var(--bg); border:1px solid var(--line); border-radius:18px; padding:16px; margin-top:14px; display:flex; flex-direction:column; box-shadow:0 14px 34px rgba(0,0,0,.22);}
   .panel .p-eb{font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--turq-deep);}
   .panel .ptitle{font-family:var(--sans); font-size:19px; font-weight:700; margin:2px 0 0;}
   .panel .ppct{font-size:13px; color:var(--turq-deep); font-weight:700; margin-top:2px;}
@@ -61,7 +61,7 @@
   /* Abstaining node: a neutral diagonal hatch reads as "awaiting evidence /
      not applicable", never as a measured 0% fill — honours the give-up rule,
      matching the desktop CfaConceptMapPage gauge (fix D-P4-1). */
-  .gauge.is-nodata{background:repeating-linear-gradient(-45deg,var(--empty),var(--empty) 4px,var(--bg) 4px,var(--bg) 8px); border:1px solid var(--line);}
+  .gauge.is-nodata{background:repeating-linear-gradient(-45deg,var(--empty),var(--empty) 4px,var(--panel-2) 4px,var(--panel-2) 8px); border:1px solid var(--line);}
   .panel .expl{font-size:14px; color:var(--ink); margin-top:12px; line-height:1.6;}
   .panel .expl.placeholder{color:var(--faint);}
   .panel .drill{margin-top:12px;}
@@ -73,7 +73,7 @@
 <div class="wrap">
   <div class="eyebrow">Concept Map · same on phone &amp; desktop</div>
   <h1>Concept Map — the mastery engine</h1>
-  <p class="lede">CFA at the centre, the test sections orbiting it, each section's subsections beyond. Node <b>size = exam weight</b>; node <b>fill = your mastery</b>, light&nbsp;gray → turquoise.</p>
+  <p class="lede">CFA at the centre, the test sections orbiting it, each section's subsections beyond. Node <b>size = exam weight</b>; node <b>fill = your mastery</b>, charcoal → gold.</p>
   <div class="howto">
     <div><span class="pill">tap</span> <span>a node's <b>name</b> + how <b>full</b> it is (%)</span></div>
     <div><span class="pill soft">size</span> <span>= exam <b>weight</b> · fill = <b>mastery</b></span></div>
@@ -83,22 +83,22 @@
     <svg id="map" viewBox="0 0 1000 740" role="img" aria-label="Interactive CFA concept mastery map">
       <defs id="defs">
         <linearGradient id="turqfill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#31CFC7"/><stop offset="1" stop-color="#0E9C97"/>
+          <stop offset="0" stop-color="#F0CF80"/><stop offset="1" stop-color="#D9AA4F"/>
         </linearGradient>
         <radialGradient id="centerglow" cx="50%" cy="50%" r="50%">
-          <stop offset="0" stop-color="#14B8B1" stop-opacity="0.14"/><stop offset="1" stop-color="#14B8B1" stop-opacity="0"/>
+          <stop offset="0" stop-color="#D9AA4F" stop-opacity="0.22"/><stop offset="1" stop-color="#D9AA4F" stop-opacity="0"/>
         </radialGradient>
         <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="2" stdDeviation="3.2" flood-color="#0e3a46" flood-opacity="0.18"/>
+          <feDropShadow dx="0" dy="2" stdDeviation="3.2" flood-color="#000000" flood-opacity="0.42"/>
         </filter>
       </defs>
       <circle cx="500" cy="366" r="170" fill="url(#centerglow)"></circle>
       <g id="edges" fill="none" stroke-linecap="round"></g>
       <g id="nodes"></g>
       <g id="tip" opacity="0" pointer-events="none" transform="translate(-4000,-4000)">
-        <rect id="tipbg" rx="8" ry="8" fill="#122B46"></rect>
+        <rect id="tipbg" rx="8" ry="8" fill="#10131A"></rect>
         <text id="tipname" text-anchor="middle" font-family="system-ui,sans-serif" font-size="15" font-weight="600" fill="#fff"></text>
-        <text id="tippct" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#4CE0D8"></text>
+        <text id="tippct" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#F0CF80"></text>
       </g>
     </svg>
     <div class="legendrow">
@@ -170,10 +170,10 @@
     return null;
   }
 
-  // light-gray -> turquoise interpolation (matches desktop fillFor). null => gray.
+  // charcoal -> gold interpolation for the Lane 4 premium night theme. null => gray.
   function mix(m){
     if (m === null) return EMPTY;
-    var g=[0xe9,0xed,0xf1], t=[0x14,0xb8,0xb1], c=g.map(function(gv,i){return Math.round(gv+(t[i]-gv)*m);});
+    var g=[0x25,0x2a,0x34], t=[0xd9,0xaa,0x4f], c=g.map(function(gv,i){return Math.round(gv+(t[i]-gv)*m);});
     return "rgb("+c[0]+","+c[1]+","+c[2]+")";
   }
   function pctOf(m){ return m === null ? null : Math.round(m*100); }
@@ -192,9 +192,9 @@
       return what+" is gray because there isn't enough evidence yet to score it — it stays dim until you've logged enough graded reviews here. Brightness is earned, never faked.";
     }
     var recall = pct>=70?"solid":(pct>=45?"decent":"shaky");
-    if (kind==="cfa") return "This is your overall CFA readiness — about "+pct+"%. It's the weight-adjusted roll-up of every section below, so your biggest, dimmest sections move it the most. Filling a heavy gray section lifts the centre far more than topping up one that's already turquoise.";
+    if (kind==="cfa") return "This is your overall CFA readiness — about "+pct+"%. It's the weight-adjusted roll-up of every section below, so your biggest, dimmest sections move it the most. Filling a heavy gray section lifts the centre far more than topping up one that's already gold.";
     if (kind==="sub") return "You're at about "+pct+"% on "+full+" (under "+parent+"). This reflects the "+parent+" section estimate — recall there is "+recall+", but it tends to bend under exam-style wording. A few targeted near-miss drills fill it fastest. (Per-subsection tracking arrives as you log more reviews.)";
-    return "You're at about "+pct+"% on "+full+". Recall is "+recall+", but "+full+" still slips on reworded vignettes — that's what keeps it from filling. A short set of "+full+" near-miss drills is the quickest way to more turquoise.";
+    return "You're at about "+pct+"% on "+full+". Recall is "+recall+", but "+full+" still slips on reworded vignettes — that's what keeps it from filling. A short set of "+full+" near-miss drills is the quickest way to more gold.";
   }
   function drillFor(node){ return node.kind==="cfa" ? "▶ Study your two dimmest heavy sections first" : "▶ Start a "+node.full+" near-miss drill"; }
 
@@ -219,7 +219,7 @@
     var mm=(m===null?0:m), fh=2*r*mm;
     fg.appendChild(el("rect",{x:x-r,y:y+r-fh,width:2*r,height:fh,fill:"url(#turqfill)"}));
     disc.appendChild(fg);
-    disc.appendChild(el("circle",{"class":"ring",cx:x,cy:y,r:r+3,fill:"none",stroke:"#0E9C97","stroke-width":3}));
+    disc.appendChild(el("circle",{"class":"ring",cx:x,cy:y,r:r+3,fill:"none",stroke:"#D9AA4F","stroke-width":3}));
     g.appendChild(disc);
     if (kind==="cfa"){
       var t=el("text",{"class":"clabel",x:x,y:y+7,"text-anchor":"middle","font-size":21}); t.textContent="CFA"; g.appendChild(t);

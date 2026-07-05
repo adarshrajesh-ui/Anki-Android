@@ -53,6 +53,7 @@ class CfaHomeActivity : AnkiActivity(R.layout.activity_cfa_home) {
             setDisplayHomeAsUpEnabled(true)
             title = getString(R.string.cfa_title_home)
         }
+        CfaShell.install(this, CfaShell.Tab.TODAY)
 
         webView = findViewById(R.id.cfa_home_web)
         webView.settings.apply {

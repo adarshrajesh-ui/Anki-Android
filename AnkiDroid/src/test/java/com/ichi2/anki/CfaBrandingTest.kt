@@ -31,12 +31,12 @@ class CfaBrandingTest {
     }
 
     @Test
-    fun `exam readiness is the first navigation drawer entry`() {
+    fun `cfa home is the first navigation drawer entry`() {
         val menu: Menu = PopupMenu(context, View(context)).menu
         MenuInflater(context).inflate(R.menu.navigation_drawer, menu)
 
         val first = menu.getItem(0)
-        assertThat("CFA Exam Readiness must be the first nav item", first.itemId, equalTo(R.id.nav_cfa_readiness))
-        assertThat(first.title.toString(), equalTo(context.getString(R.string.cfa_nav_exam_readiness)))
+        assertThat("CFA Home must be the first nav item", first.itemId, equalTo(R.id.nav_cfa_home))
+        assertThat(first.title.toString(), equalTo(context.getString(R.string.cfa_nav_home)))
     }
 }

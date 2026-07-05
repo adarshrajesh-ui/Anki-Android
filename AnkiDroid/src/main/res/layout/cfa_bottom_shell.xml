@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/cfa_bottom_nav"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:background="@color/cfa_night_panel"
+    android:baselineAligned="false"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:paddingStart="6dp"
+    android:paddingEnd="6dp">
+
+    <TextView
+        android:id="@+id/cfa_tab_today"
+        style="@style/CfaBottomShellItem"
+        android:text="@string/cfa_tab_today" />
+
+    <TextView
+        android:id="@+id/cfa_tab_study"
+        style="@style/CfaBottomShellItem"
+        android:text="@string/cfa_tab_study" />
+
+    <TextView
+        android:id="@+id/cfa_tab_readiness"
+        style="@style/CfaBottomShellItem"
+        android:text="@string/cfa_tab_readiness" />
+
+    <TextView
+        android:id="@+id/cfa_tab_map"
+        style="@style/CfaBottomShellItem"
+        android:text="@string/cfa_tab_map" />
+
+    <TextView
+        android:id="@+id/cfa_tab_library"
+        style="@style/CfaBottomShellItem"
+        android:text="@string/cfa_tab_library" />
+
+    <TextView
+        android:id="@+id/cfa_tab_more"
+        style="@style/CfaBottomShellItem"
+        android:text="@string/cfa_tab_more" />
+</LinearLayout>

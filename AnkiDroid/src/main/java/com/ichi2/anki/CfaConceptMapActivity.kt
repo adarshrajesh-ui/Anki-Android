@@ -49,6 +49,7 @@ class CfaConceptMapActivity : AnkiActivity(R.layout.activity_cfa_concept_map) {
             setDisplayHomeAsUpEnabled(true)
             title = getString(R.string.cfa_title_concept_map)
         }
+        CfaShell.install(this, CfaShell.Tab.MAP)
 
         webView = findViewById(R.id.cfa_concept_web)
         webView.settings.apply {

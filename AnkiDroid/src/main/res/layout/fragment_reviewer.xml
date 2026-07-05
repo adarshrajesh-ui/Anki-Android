@@ -6,7 +6,7 @@
     android:id="@+id/root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/alternativeBackgroundColor"
+    android:background="@color/cfa_night_bg"
     android:fitsSystemWindows="true"
     android:focusableInTouchMode="true"
     tools:context=".ui.windows.reviewer.ReviewerFragment">
@@ -25,6 +25,7 @@
             android:minHeight="?actionBarSize"
             android:gravity="center_vertical"
             android:layout_marginHorizontal="4dp"
+            android:background="@color/cfa_night_bg"
             >
 
             <androidx.appcompat.widget.AppCompatImageButton
@@ -88,7 +89,13 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_marginHorizontal="@dimen/reviewer_side_margin">
+            android:layout_marginHorizontal="@dimen/reviewer_side_margin"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="10dp"
+            app:cardBackgroundColor="@color/cfa_night_panel"
+            app:cardCornerRadius="18dp"
+            app:strokeColor="@color/cfa_night_line"
+            app:strokeWidth="1dp">
 
             <com.ichi2.anki.workarounds.SafeWebViewLayout
                 android:id="@+id/web_view_layout"
@@ -149,7 +156,9 @@
             android:clipChildren="false"
             android:showDividers="middle|beginning|end"
             android:divider="@drawable/vertical_spacer_8dp"
-            android:layout_marginHorizontal="@dimen/reviewer_side_margin">
+            android:layout_marginHorizontal="@dimen/reviewer_side_margin"
+            android:layout_marginBottom="10dp"
+            android:background="@color/cfa_night_bg">
 
             <!-- Use the same card style of the WebView -->
             <com.google.android.material.card.MaterialCardView
@@ -158,6 +167,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:visibility="gone"
+                app:cardBackgroundColor="@color/cfa_night_panel_2"
+                app:cardCornerRadius="18dp"
+                app:strokeColor="@color/cfa_night_line"
+                app:strokeWidth="1dp"
                 tools:visibility="visible">
 
                 <com.google.android.material.textfield.TextInputLayout

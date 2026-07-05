@@ -50,6 +50,18 @@
     <color name="cfa_ink">#122B46</color>
     <color name="cfa_muted">#4D5C6D</color>
 
+    <!-- Lane 4 package/UI pass: premium CFA night shell for the dedicated mobile
+         CFA surfaces. These tokens intentionally layer on top of the existing
+         desktop-parity navy/orange palette instead of changing it globally. -->
+    <color name="cfa_night_bg">#07080B</color>
+    <color name="cfa_night_panel">#10131A</color>
+    <color name="cfa_night_panel_2">#151925</color>
+    <color name="cfa_night_ink">#F5F2E8</color>
+    <color name="cfa_night_muted">#A8ACB8</color>
+    <color name="cfa_night_line">#2B303B</color>
+    <color name="cfa_gold">#D9AA4F</color>
+    <color name="cfa_gold_light">#F0CF80</color>
+
     <!--
       Reviewer ease-answer button fills (Phase B mobile Reviewer sweep). The four
       answer buttons — the highest-time-on-screen surface — shipped in raw stock
@@ -91,6 +103,13 @@
     <string name="cfa_nav_ethics" comment="Nav-drawer menu entry that launches the Ethics Minimal-Pairs study drill" maxLength="28">Ethics</string>
     <!-- CFA sync/account entry: connect when logged out, trigger sync when logged in. -->
     <string name="cfa_nav_sync_account" maxLength="28">Connect &amp; Sync</string>
+    <!-- Lane 4 mobile shell: persistent CFA bottom navigation. -->
+    <string name="cfa_tab_today" maxLength="16">Today</string>
+    <string name="cfa_tab_study" maxLength="16">Study</string>
+    <string name="cfa_tab_readiness" maxLength="16">Readiness</string>
+    <string name="cfa_tab_map" maxLength="16">Map</string>
+    <string name="cfa_tab_library" maxLength="16">Library</string>
+    <string name="cfa_tab_more" maxLength="16">More</string>
 
     <!-- Exam Readiness screen. -->
     <string name="cfa_readiness_memory">Memory</string>
@@ -171,6 +190,23 @@
     -->
     <style name="CfaShowAnswerButton">
         <item name="answerButtonBackground">@color/cfa_navy</item>
+    </style>
+
+    <style name="CfaBottomShellItem">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingStart">2dp</item>
+        <item name="android:paddingEnd">2dp</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:singleLine">true</item>
     </style>
 
 </resources>
