@@ -27,7 +27,7 @@
         android:id="@+id/action_cfa_ai_fill"
         android:icon="@drawable/ic_cfa_ai_fill"
         android:title="@string/cfa_ai_fill"
-        ankidroid:showAsAction="ifRoom"/>
+        ankidroid:showAsAction="always"/>
     <item
         android:id="@+id/action_font_size"
         android:title="@string/menu_font_size"

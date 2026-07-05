@@ -128,14 +128,14 @@
     <string name="cfa_exam_config_countdown_today">Your exam is today — good luck.</string>
     <string name="cfa_exam_config_countdown_past">This exam date has already passed.</string>
 
-    <!-- AI Fill (bidirectional tab-fill) — generate the empty side via the AI proxy. -->
-    <string name="cfa_ai_fill" maxLength="28">AI Fill (empty side)</string>
-    <string name="cfa_ai_fill_drafting">Generating with AI…</string>
+    <!-- Phone parity with desktop Tab-to-fill: visible button completes the Back via the AI proxy. -->
+    <string name="cfa_ai_fill" maxLength="28">Tab to complete the back</string>
+    <string name="cfa_ai_fill_drafting">Completing the back with AI…</string>
     <string name="cfa_ai_fill_no_two_fields">This note type has no separate front/back to fill.</string>
-    <string name="cfa_ai_fill_need_one_side">Type one side and leave the other empty, then AI Fill generates it.</string>
-    <string name="cfa_ai_fill_done">Drafted the %1$s with AI (%2$s)</string>
-    <string name="cfa_ai_fill_unavailable">AI unavailable — %1$s. Card left unchanged.</string>
-    <string name="cfa_ai_fill_off">AI is turned off. Turn it on to draft with AI; the card is left unchanged.</string>
+    <string name="cfa_ai_fill_need_one_side">Type the front and leave the back empty, then tap to complete the back.</string>
+    <string name="cfa_ai_fill_done">Drafted the back with AI (%1$s)</string>
+    <string name="cfa_ai_fill_unavailable">AI failed — %1$s. Card left unchanged.</string>
+    <string name="cfa_ai_fill_off">Deterministic — AI is turned off. Card left unchanged.</string>
 
     <!-- Exam-priority study action. -->
     <string name="cfa_study_by_priority">Study by Exam Priority</string>

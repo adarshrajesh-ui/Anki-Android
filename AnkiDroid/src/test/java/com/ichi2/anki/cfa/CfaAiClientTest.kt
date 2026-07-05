@@ -58,6 +58,51 @@ class CfaAiClientTest {
     }
 
     @Test
+    fun fill_back_button_is_front_to_back_only() {
+        val r = CfaAiClient.fillBack("http://x", "tok", "Define front-running.", backPoster)
+        assertThat(r.ok, equalTo(true))
+        assertThat(r.target, equalTo("back"))
+        assertThat(r.text, equalTo("Trading ahead of client orders."))
+    }
+
+    @Test
+    fun fill_back_rejects_empty_front_without_network() {
+        var called = false
+        val r =
+            CfaAiClient.fillBack(
+                "http://x",
+                "tok",
+                " ",
+                CfaHttpPost { _, _, _ ->
+                    called = true
+                    200 to "{}"
+                },
+            )
+        assertThat(r.ok, equalTo(false))
+        assertThat(r.target, equalTo("back"))
+        assertThat(r.source, equalTo("fallback"))
+        assertThat(r.error, equalTo("empty_front"))
+        assertThat(called, equalTo(false))
+    }
+
+    @Test
+    fun fill_back_rejects_unexpected_front_generation() {
+        val r =
+            CfaAiClient.fillBack(
+                "http://x",
+                "tok",
+                "Define front-running.",
+                CfaHttpPost { _, _, _ ->
+                    200 to """{"ok":true,"text":"Q?","target":"front","source":"ai","model":"m","error":null}"""
+                },
+            )
+        assertThat(r.ok, equalTo(false))
+        assertThat(r.target, equalTo("back"))
+        assertThat(r.source, equalTo("fallback"))
+        assertThat(r.error, equalTo("unexpected_target"))
+    }
+
+    @Test
     fun fill_nothing_when_both_empty_or_both_filled() {
         val bothEmpty = CfaAiClient.fill("http://x", "t", "  ", "", backPoster)
         assertThat(bothEmpty.source, equalTo("fallback"))

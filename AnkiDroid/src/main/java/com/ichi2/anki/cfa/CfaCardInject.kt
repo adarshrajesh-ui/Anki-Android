@@ -19,27 +19,41 @@
 package com.ichi2.anki.cfa
 
 import com.ichi2.anki.libanki.Collection
+import org.json.JSONObject
 
 object CfaCardInject {
     /**
-     * A tiny inline script that publishes the resolved AI-grading toggle as a
-     * boolean window global. Pure/deterministic so it is unit-testable without a
-     * collection or a WebView.
+     * A tiny inline script that publishes the resolved AI-grading toggle and
+     * proxy config as window globals. Pure/deterministic so it is unit-testable
+     * without a collection or a WebView.
      */
-    fun aiGradingToggleScript(enabled: Boolean): String = "<script>window.CFA_AI_GRADING_ENABLED=$enabled;</script>"
+    fun aiConfigScript(
+        enabled: Boolean,
+        proxyUrl: String = CfaAiClient.DEFAULT_URL,
+        proxyToken: String = CfaAiClient.DEFAULT_TOKEN,
+    ): String =
+        "<script>" +
+            "window.CFA_AI_GRADING_ENABLED=$enabled;" +
+            "window.CFA_AI_PROXY_URL=${JSONObject.quote(proxyUrl)};" +
+            "window.CFA_AI_PROXY_TOKEN=${JSONObject.quote(proxyToken)};" +
+            "</script>"
 
     /**
-     * Prepend the AI-grading toggle global to rendered card [html] so the ethics
-     * card template can honour the synced toggle. Reading col.conf is cheap; on
-     * any error the html is returned unchanged (fail-open — the card then behaves
-     * as an older build, i.e. AI on).
+     * Prepend the AI globals to rendered card [html] so the ethics card template
+     * can honour the synced toggle and configured proxy URL/token. Reading
+     * col.conf is cheap; on any error the html is returned unchanged (fail-open —
+     * the card then behaves as an older build, i.e. AI on with default proxy).
      */
     fun withAiToggle(
         col: Collection,
         html: String,
     ): String =
         try {
-            aiGradingToggleScript(CfaAiClient.aiEnabled(col, CfaAiClient.GRADING_KEY)) + html
+            aiConfigScript(
+                CfaAiClient.aiEnabled(col, CfaAiClient.GRADING_KEY),
+                CfaAiClient.proxyUrl(col),
+                CfaAiClient.proxyToken(col),
+            ) + html
         } catch (_: Throwable) {
             html
         }

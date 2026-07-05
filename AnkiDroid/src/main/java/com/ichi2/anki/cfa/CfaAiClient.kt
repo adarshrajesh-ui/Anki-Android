@@ -254,6 +254,40 @@ object CfaAiClient {
             fill(proxyUrl(col), proxyToken(col), front, back, poster)
         }
 
+    /** The phone editor's visible button is back-only: front text in, empty back out. */
+    fun fillBack(
+        col: Collection,
+        front: String,
+        poster: CfaHttpPost = DEFAULT_POST,
+    ): CfaAiResult =
+        if (!aiEnabled(col, TABFILL_KEY)) {
+            aiOffFill()
+        } else {
+            fillBack(proxyUrl(col), proxyToken(col), front, poster)
+        }
+
+    /**
+     * Pure back-only overload for the phone button. It still uses `/cfa/tabfill`
+     * so the generated answer comes through the desktop AI proxy, but it never
+     * asks the server to generate a front.
+     */
+    fun fillBack(
+        baseUrl: String,
+        token: String,
+        front: String,
+        poster: CfaHttpPost,
+    ): CfaAiResult {
+        if (front.isBlank()) {
+            return CfaAiResult(false, "", "back", "fallback", null, "empty_front")
+        }
+        val result = fill(baseUrl, token, front, "", poster)
+        return if (result.ok && result.target != "back") {
+            CfaAiResult(false, "", "back", "fallback", result.model, "unexpected_target")
+        } else {
+            result
+        }
+    }
+
     /** Pure overload: POST {front, back} to the proxy at [baseUrl]; parse the result. */
     fun fill(
         baseUrl: String,
