@@ -16,6 +16,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.cfa.CfaExamConfig
+import com.ichi2.anki.cfa.examDateFieldContentDescription
 import com.ichi2.anki.snackbar.showSnackbar
 import timber.log.Timber
 import java.time.Instant
@@ -46,15 +47,29 @@ class CfaExamConfigActivity : AnkiActivity(R.layout.activity_cfa_exam_config) {
             val existing = withCol { CfaExamConfig.read(this) }
             selectedDate = existing?.examDate
             dateView.text = selectedDate ?: getString(R.string.cfa_exam_config_no_date)
+            updateDateAffordance(dateView)
             renderCountdown(countdownView)
         }
 
-        findViewById<MaterialButton>(R.id.cfa_config_pick_date).setOnClickListener {
+        // Phase B Pass-3 (M-P3-3): the date box looks like an input, so it IS the
+        // control — tapping it opens the picker. The prior design put the only
+        // real affordance on a separate "Pick date" button while this box sat
+        // inert (a false affordance); that redundant button is gone.
+        dateView.setOnClickListener {
             showDatePicker(dateView, countdownView)
         }
         findViewById<MaterialButton>(R.id.cfa_config_save).setOnClickListener {
             save()
         }
+    }
+
+    /**
+     * Announce the date box to TalkBack as a control carrying its current value
+     * and the action activating it performs (M-P3-3), via the pure, unit-tested
+     * [examDateFieldContentDescription].
+     */
+    private fun updateDateAffordance(dateView: TextView) {
+        dateView.contentDescription = examDateFieldContentDescription(selectedDate)
     }
 
     /**
@@ -110,6 +125,7 @@ class CfaExamConfigActivity : AnkiActivity(R.layout.activity_cfa_exam_config) {
             val date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
             selectedDate = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
             dateView.text = selectedDate
+            updateDateAffordance(dateView)
             renderCountdown(countdownView)
         }
         picker.show(supportFragmentManager, "cfa_exam_date")

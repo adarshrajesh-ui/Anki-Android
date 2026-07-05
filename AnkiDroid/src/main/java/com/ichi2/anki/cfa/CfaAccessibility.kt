@@ -57,3 +57,25 @@ fun scoreCardContentDescription(
     } else {
         "$label: ${cfaPct(score.point!!)}, range ${cfaPct(score.rangeLow!!)} to ${cfaPct(score.rangeHigh!!)}"
     }
+
+/**
+ * One coherent spoken label for the exam-date field on the Exam Config screen.
+ *
+ * Phase B Pass-3 (M-P3-3): the date box is styled as a filled input (surface
+ * background, padding, 18sp navy) but is a TAPPABLE control that opens the date
+ * picker — not inert text. TalkBack must therefore announce it as a control with
+ * its current value AND the action that activating it performs; otherwise a
+ * non-sighted user hears only static text and never discovers it opens a picker
+ * (WCAG 2.1 SC 4.1.2 Name, Role, Value; 1.3.1 Info and Relationships).
+ *
+ * [dateValue] is the selected ISO date (yyyy-MM-dd) or null/blank when unset.
+ *
+ * e.g. "Exam date, 2026-08-22. Double-tap to change." or
+ *      "Exam date, not set. Double-tap to choose your exam date."
+ */
+fun examDateFieldContentDescription(dateValue: String?): String =
+    if (dateValue.isNullOrBlank()) {
+        "Exam date, not set. Double-tap to choose your exam date."
+    } else {
+        "Exam date, $dateValue. Double-tap to change."
+    }

@@ -75,7 +75,6 @@
     <!-- Exam config editor. -->
     <string name="cfa_exam_config_title">Exam configuration</string>
     <string name="cfa_exam_config_date_label">Exam date</string>
-    <string name="cfa_exam_config_pick_date">Pick date</string>
     <!-- Save button reuses the upstream @string/save to avoid a duplicate string. -->
     <string name="cfa_exam_config_saved">Exam configuration saved</string>
     <string name="cfa_exam_config_no_date">No exam date set</string>

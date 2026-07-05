@@ -122,8 +122,53 @@ class CfaAccessibilityTest {
         )
     }
 
-    private fun findActivitySource(): String {
-        val rel = "src/main/java/com/ichi2/anki/CfaExamReadinessActivity.kt"
+    private fun findActivitySource(): String = findRepoFile("src/main/java/com/ichi2/anki/CfaExamReadinessActivity.kt")
+
+    // ---- M-P3-3: the exam-date field is a tappable control, not inert text ---
+
+    @Test
+    fun `unset exam-date field announces itself as a control that opens the picker`() {
+        val label = examDateFieldContentDescription(null)
+        assertThat(label, containsString("Exam date"))
+        assertThat(label, containsString("not set"))
+        // Non-sighted users must learn activating it does something.
+        assertThat(label, containsString("Double-tap"))
+    }
+
+    @Test
+    fun `blank exam-date is treated as unset, not spoken as an empty value`() {
+        assertThat(examDateFieldContentDescription("  "), equalTo(examDateFieldContentDescription(null)))
+    }
+
+    @Test
+    fun `set exam-date field announces its value and that it can be changed`() {
+        val label = examDateFieldContentDescription("2026-08-22")
+        assertThat(label, equalTo("Exam date, 2026-08-22. Double-tap to change."))
+    }
+
+    @Test
+    fun `exam-config date box is a real touch target with a ripple and a picker click, not a false affordance`() {
+        val layout = findRepoFile("src/main/res/layout/activity_cfa_exam_config.xml")
+        // The box that looks like an input must behave like a control:
+        // clickable + focusable + a >=48dp Material/WCAG-2.5.5 touch target +
+        // a ripple foreground so a tap is perceivable.
+        val box = layout.substringAfter("@+id/cfa_config_date_value").substringBefore("/>")
+        assertThat(box, containsString("android:clickable=\"true\""))
+        assertThat(box, containsString("android:focusable=\"true\""))
+        assertThat(box, containsString("android:minHeight=\"48dp\""))
+        assertThat(box, containsString("?attr/selectableItemBackground"))
+        // The redundant secondary "Pick date" button must be gone — the box IS
+        // the control now, so there is exactly one date affordance.
+        assertThat(layout.contains("cfa_config_pick_date"), equalTo(false))
+
+        val activity = findRepoFile("src/main/java/com/ichi2/anki/CfaExamConfigActivity.kt")
+        assertThat(activity, containsString("dateView.setOnClickListener"))
+        assertThat(activity, containsString("examDateFieldContentDescription(selectedDate)"))
+        // No lingering wiring to the removed button.
+        assertThat(activity.contains("cfa_config_pick_date"), equalTo(false))
+    }
+
+    private fun findRepoFile(rel: String): String {
         val candidates = listOf(rel, "AnkiDroid/$rel", "../AnkiDroid/$rel")
         var dir = java.io.File(System.getProperty("user.dir") ?: ".")
         repeat(6) {
@@ -133,6 +178,6 @@ class CfaAccessibilityTest {
             }
             dir = dir.parentFile ?: return@repeat
         }
-        error("could not locate CfaExamReadinessActivity.kt from ${System.getProperty("user.dir")}")
+        error("could not locate $rel from ${System.getProperty("user.dir")}")
     }
 }

@@ -1,0 +1,60 @@
+Phase B Pass 3 (ruthless) — MOBILE finding M-P3-3
+==================================================
+Screen: Exam Configuration (CfaExamConfigActivity / activity_cfa_exam_config.xml)
+Severity: MAJOR (usability / accessibility — false affordance)
+Heuristic: Nielsen #2 (match between system & real world) + #6 (recognition
+           over recall); Material date-input convention; WCAG 2.1 SC 4.1.2
+           (Name, Role, Value), 2.5.5 (Target Size).
+
+DEFECT (before)
+---------------
+The exam-date box (cfa_config_date_value) is styled as a FILLED INPUT — surface
+background, 14dp padding, 18sp navy text — so it reads as a tappable date field.
+But it was an inert TextView: it had no click handler, and the ONLY control that
+opened the date picker was a SEPARATE secondary "Pick date" outlined button below
+it. So the obvious target did nothing, and the user had to hunt for a second
+control to do what the box appeared to offer. For a TalkBack user it was worse:
+the box exposed no role and no action, announced as static text.
+
+Device-observable BEFORE (emulator-5554, stash-isolated real debug build):
+  - cfa_config_date_value: clickable = false
+  - cfa_config_date_value: content-desc = "" (empty — inert text)
+  - a redundant "Pick date" button present
+  Screenshot: pass-3-before/05-exam-config-inert-field-before.png
+  A11y tree:  pass-3-before/exam-config-a11y-before.xml
+
+FIX (after)
+-----------
+The box IS the control. It is now clickable + focusable, has a >=48dp minHeight
+(Material / WCAG 2.5.5 touch target), a ?attr/selectableItemBackground ripple
+foreground so a tap is perceivable, and a trailing calendar affordance
+(drawableEnd = calendar_single_day, tinted navy). Tapping it opens the
+MaterialDatePicker. The redundant "Pick date" button (and its now-orphaned
+string) was removed — exactly one date affordance remains. A pure, unit-tested
+label builder (examDateFieldContentDescription) gives TalkBack a coherent control
+label + action ("Exam date, <value>. Double-tap to change." / "…not set.
+Double-tap to choose your exam date.").
+
+Device-observable AFTER (emulator-5554, real debug build):
+  - cfa_config_date_value: clickable = true
+  - cfa_config_date_value: content-desc =
+      "Exam date, not set. Double-tap to choose your exam date."
+  - NO "Pick date" button present
+  - Tapping the box opens the date picker ("July 2026" / Cancel / OK)
+  Screenshots: pass-3/05-exam-config-tappable-field-after.png
+               pass-3/06-exam-config-tap-opens-picker-after.png
+  A11y tree:   pass-3/exam-config-a11y-after.xml
+
+GUARD (green)
+-------------
+CfaAccessibilityTest.kt 7 -> 11 tests:
+  - 3 pure examDateFieldContentDescription tests (set / unset / blank-as-unset)
+  - 1 regression guard parsing the layout + activity source: asserts the date
+    box is clickable + focusable + minHeight 48dp + ripple foreground, that the
+    redundant "Pick date" button id is GONE from both the layout and activity,
+    and that the activity wires dateView.setOnClickListener + sets the a11y label.
+Green: testPlayDebugUnitTest (CfaAccessibilityTest 11, CfaExamConfigTest 7),
+       ktlintCheck, lintVitalFullRelease, installFullDebug.
+
+Scope: presentation/interaction only. The synced cfa_exam_config col.conf shape,
+CfaExamConfig.read/write/daysUntil, and the countdown logic are all untouched.
