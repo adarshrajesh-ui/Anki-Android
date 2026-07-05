@@ -21,9 +21,11 @@
     <color name="cfa_accent_soft" tools:ignore="UnusedResources">#FCEBDA</color>
     <color name="cfa_pass" tools:ignore="UnusedResources">#15803D</color>
     <color name="cfa_fail" tools:ignore="UnusedResources">#B91C1C</color>
-    <color name="cfa_warn">#B45309</color>
+    <!-- cfa_warn reserved for a genuine near-deadline warning; abstain/empty
+         states use cfa_muted (Phase B M3-1/M3-2 fix), so it is currently unused. -->
+    <color name="cfa_warn" tools:ignore="UnusedResources">#B45309</color>
     <color name="cfa_surface">#F3F6F8</color>
-    <color name="cfa_line" tools:ignore="UnusedResources">#E7E9EC</color>
+    <color name="cfa_line">#E7E9EC</color>
     <color name="cfa_ink">#122B46</color>
     <color name="cfa_muted">#4D5C6D</color>
 
@@ -62,5 +64,17 @@
     <string name="cfa_study_by_priority">Study by Exam Priority</string>
     <string name="cfa_study_priority_empty">No cards to study by exam priority yet</string>
     <string name="cfa_study_priority_deck">CFA Exam Priority</string>
+
+    <!--
+      CFA outlined-button style (Phase B M3-6 / M4-1 fix): the Material default
+      outlined button inherits the theme's blue accent for its label + stroke,
+      which reads as stock AnkiDroid on CFA screens. This reserves the CFA navy
+      for the label/stroke and the warm accent for the ripple.
+    -->
+    <style name="Widget.Cfa.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:textColor">@color/cfa_navy</item>
+        <item name="strokeColor">@color/cfa_navy</item>
+        <item name="rippleColor">@color/cfa_accent</item>
+    </style>
 
 </resources>

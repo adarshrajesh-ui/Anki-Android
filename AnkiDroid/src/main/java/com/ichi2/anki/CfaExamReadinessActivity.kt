@@ -151,8 +151,10 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(16))
-                val bg = if (hero) R.color.cfa_surface else android.R.color.transparent
-                setBackgroundColor(getColor(bg))
+                // All three cards share one container (surface + hairline + radius)
+                // so Memory / Performance / Readiness read as consistent cards
+                // (Phase B M3-3); the hero is emphasised by its larger value text.
+                setBackgroundResource(R.drawable.cfa_score_card_bg)
                 layoutParams =
                     LinearLayout
                         .LayoutParams(
@@ -171,12 +173,14 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
         )
 
         if (score.abstain) {
+            // Abstain is a calm, quiet muted-grey line (Phase B M3-1/M3-2):
+            // the *absence* of data must never shout in warn-orange nor collide
+            // with the warm brand accent — mirrors the desktop StatCard fix.
             card.addView(
                 TextView(this).apply {
-                    text = "N/A — abstaining"
-                    setTextColor(getColor(R.color.cfa_warn))
-                    textSize = if (hero) 24f else 20f
-                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    text = "Awaiting reviews"
+                    setTextColor(getColor(R.color.cfa_muted))
+                    textSize = if (hero) 22f else 18f
                     setPadding(0, dp(2), 0, 0)
                 },
             )
