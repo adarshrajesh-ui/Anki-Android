@@ -371,8 +371,12 @@ abstract class NavigationDrawerActivity(
                     }
 
                     R.id.nav_cfa_sync_account -> {
-                        Timber.i("Navigating to sync account screen")
-                        startActivity(AccountActivity.getIntent(this@NavigationDrawerActivity))
+                        Timber.i("Navigating to CFA Connect & Sync")
+                        if (isLoggedIn()) {
+                            startActivity(DeckPicker.getIntent(this@NavigationDrawerActivity, autoSync = true))
+                        } else {
+                            startActivity(AccountActivity.getIntent(this@NavigationDrawerActivity))
+                        }
                     }
 
                     R.id.nav_decks -> {

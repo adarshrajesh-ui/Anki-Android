@@ -42,8 +42,8 @@
         <item
             android:id="@+id/nav_stats"
             android:icon="@drawable/ic_bar_chart_black"/>
-        <!-- CFA fork: Log out — right under Statistics. Opens the sync account
-             screen (Log out when logged in, Log in otherwise). -->
+        <!-- CFA fork: Connect & Sync — right under Statistics. Opens account
+             setup when logged out, or triggers the existing DeckPicker sync when logged in. -->
         <item
             android:id="@+id/nav_cfa_sync_account"
             android:icon="@drawable/ic_sync"

@@ -98,6 +98,19 @@ class CfaAiSettingsTest {
     }
 
     @Test
+    fun home_sync_card_opens_connect_and_sync() {
+        val html =
+            repoFile(
+                "src/main/assets/cfa/home.html",
+                "AnkiDroid/src/main/assets/cfa/home.html",
+            )
+        assertThat(html, containsString("sync-card"))
+        assertThat(html, containsString("Settings &amp; sync"))
+        assertThat(html, containsString("Connect & Sync"))
+        assertThat(html, containsString("window.AndroidCfaHome.open(\"sync\")"))
+    }
+
+    @Test
     fun home_activity_routes_and_injects_ai_settings() {
         val activity =
             repoFile(
@@ -107,6 +120,27 @@ class CfaAiSettingsTest {
         // The bridge launches AI Settings and the master state is injected as a window global.
         assertThat(activity, containsString("CfaAiSettingsActivity.getIntent"))
         assertThat(activity, containsString("window.CFA_AI_ENABLED"))
+        assertThat(activity, containsString("buildSyncPayload"))
+        assertThat(activity, containsString("DeckPicker.getIntent(this, autoSync = true)"))
+        assertThat(activity, containsString("AccountActivity.getIntent(this)"))
+    }
+
+    @Test
+    fun nav_drawer_relabels_logout_to_connect_and_sync() {
+        val cfaStrings =
+            repoFile(
+                "src/main/res/values/cfa.xml",
+                "AnkiDroid/src/main/res/values/cfa.xml",
+            )
+        val drawer =
+            repoFile(
+                "src/main/java/com/ichi2/anki/NavigationDrawerActivity.kt",
+                "AnkiDroid/src/main/java/com/ichi2/anki/NavigationDrawerActivity.kt",
+            )
+        assertThat(cfaStrings, containsString("Connect &amp; Sync"))
+        assertThat(cfaStrings.contains(">Log out<"), equalTo(false))
+        assertThat(drawer, containsString("DeckPicker.getIntent(this@NavigationDrawerActivity, autoSync = true)"))
+        assertThat(drawer, containsString("AccountActivity.getIntent(this@NavigationDrawerActivity)"))
     }
 
     @Test

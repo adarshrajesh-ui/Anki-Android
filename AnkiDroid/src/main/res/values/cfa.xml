@@ -89,8 +89,8 @@
          desktop top bar has (previously reachable only from the Home dashboard). -->
     <string name="cfa_nav_study" comment="Nav-drawer menu entry that launches a study session ordered by exam priority (weakest topics first)" maxLength="28">Study</string>
     <string name="cfa_nav_ethics" comment="Nav-drawer menu entry that launches the Ethics Minimal-Pairs study drill" maxLength="28">Ethics</string>
-    <!-- Log out entry (under Statistics): opens the sync account screen (Log out when logged in, Log in otherwise). -->
-    <string name="cfa_nav_sync_account" maxLength="28">Log out</string>
+    <!-- CFA sync/account entry: connect when logged out, trigger sync when logged in. -->
+    <string name="cfa_nav_sync_account" maxLength="28">Connect &amp; Sync</string>
 
     <!-- Exam Readiness screen. -->
     <string name="cfa_readiness_memory">Memory</string>
