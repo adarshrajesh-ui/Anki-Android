@@ -86,7 +86,24 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
 
         val container = findViewById<LinearLayout>(R.id.cfa_scores_container)
         container.removeAllViews()
-        container.addView(scoreCard(getString(R.string.cfa_readiness_readiness), scores.readiness, hero = true))
+        // When BOTH inputs are still awaiting data the shared engine's readiness reason is a
+        // verbatim concatenation of the memory + performance reasons shown on the two cards
+        // below (and in the evidence caption), so the hero would repeat the same counts three
+        // times. Give the hero a concise composite line instead — the specifics stay below.
+        val heroAbstainOverride =
+            if (scores.memory.abstain && scores.performance.abstain) {
+                getString(R.string.cfa_readiness_abstain_hint)
+            } else {
+                null
+            }
+        container.addView(
+            scoreCard(
+                getString(R.string.cfa_readiness_readiness),
+                scores.readiness,
+                hero = true,
+                abstainOverride = heroAbstainOverride,
+            ),
+        )
         container.addView(scoreCard(getString(R.string.cfa_readiness_memory), scores.memory))
         container.addView(scoreCard(getString(R.string.cfa_readiness_performance), scores.performance))
 
@@ -146,6 +163,7 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
         label: String,
         score: HonestScore,
         hero: Boolean = false,
+        abstainOverride: String? = null,
     ): View {
         val card =
             LinearLayout(this).apply {
@@ -186,7 +204,7 @@ class CfaExamReadinessActivity : AnkiActivity(R.layout.activity_cfa_exam_readine
             )
             card.addView(
                 TextView(this).apply {
-                    text = score.reason
+                    text = abstainOverride ?: score.reason
                     setTextColor(getColor(R.color.cfa_muted))
                     textSize = 13f
                     setPadding(0, dp(4), 0, 0)

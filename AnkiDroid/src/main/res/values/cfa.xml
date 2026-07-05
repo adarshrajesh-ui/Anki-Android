@@ -47,6 +47,11 @@
     <string name="cfa_readiness_performance">Performance</string>
     <string name="cfa_readiness_readiness">Readiness</string>
     <string name="cfa_readiness_per_topic">Per-topic recall</string>
+    <!-- Concise composite abstain sub-line for the hero Readiness card, shown INSTEAD of
+         repeating the memory + performance reasons verbatim when both inputs are still
+         awaiting data (the specific counts stay on the Memory / Performance cards and the
+         evidence caption below), mirroring the desktop "state the verdict once" fix. -->
+    <string name="cfa_readiness_abstain_hint">Keep studying — the Memory and Performance scores below need more data first.</string>
     <string name="cfa_readiness_source_fallback">Source: on-device (deterministic)</string>
     <string name="cfa_readiness_source_rpc">Source: shared engine</string>
 
