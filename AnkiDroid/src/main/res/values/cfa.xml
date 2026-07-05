@@ -106,6 +106,12 @@
     <string name="cfa_study_priority_empty">No cards to study by exam priority yet</string>
     <string name="cfa_study_priority_deck">CFA Exam Priority</string>
 
+    <!-- Ethics Minimal-Pairs study action (the flagship drill; mirrors the
+         desktop Home's primary "Study Ethics — Minimal Pairs" CTA). -->
+    <string name="cfa_study_ethics">Study Ethics — Minimal Pairs</string>
+    <string name="cfa_study_ethics_empty">No CFA Ethics cards are available to study yet</string>
+    <string name="cfa_study_ethics_deck">CFA Study — Ethics Minimal-Pairs</string>
+
     <!--
       CFA outlined-button style (Phase B M3-6 / M4-1 fix): the Material default
       outlined button inherits the theme's blue accent for its label + stroke,

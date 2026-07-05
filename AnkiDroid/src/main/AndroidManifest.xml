@@ -321,6 +321,13 @@
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:parentActivityName=".CfaExamReadinessActivity"
             />
+        <!-- CFA fork: the flagship Ethics Minimal-Pairs drill (Home primary CTA). -->
+        <activity
+            android:name="com.ichi2.anki.CfaEthicsStudyActivity"
+            android:exported="false"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:parentActivityName=".CfaHomeActivity"
+            />
         <!-- CFA fork: the Concept Map (radial mastery map), identical on phone & desktop. -->
         <activity
             android:name="com.ichi2.anki.CfaConceptMapActivity"

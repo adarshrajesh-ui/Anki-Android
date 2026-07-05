@@ -15,7 +15,6 @@ import com.ichi2.anki.shouldOpenCfaHomeOnLaunch
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.containsString
 import org.hamcrest.Matchers.equalTo
-import org.hamcrest.Matchers.not
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -192,13 +191,15 @@ class CfaHomeTest {
         // Reads the injected data, routes CTAs through the native bridge.
         assertThat(html, containsString("window.CFA_HOME_DATA"))
         assertThat(html, containsString("AndroidCfaHome"))
-        // The CFA nav CTAs are present (Study / Readiness / Concept Map / Decks).
+        // The CFA nav CTAs are present (Ethics / Priority / Readiness / Concept
+        // Map / Decks) — the flagship Ethics drill leads as the primary CTA,
+        // matching the desktop Home's primary "cfa:ethics" tile.
         assertThat(html, containsString("readiness"))
         assertThat(html, containsString("conceptmap"))
         assertThat(html, containsString("priority"))
+        assertThat(html, containsString('"' + "ethics" + '"'))
+        assertThat(html, containsString("Study Ethics — Minimal Pairs"))
         // Honest source provenance chip (shared engine vs on-device).
         assertThat(html, containsString("shared engine"))
-        // No stray leftover fifth ethics-only CTA that has no native destination.
-        assertThat(html, not(containsString('"' + "ethics" + '"')))
     }
 }

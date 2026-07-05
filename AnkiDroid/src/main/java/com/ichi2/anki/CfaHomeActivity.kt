@@ -115,6 +115,7 @@ class CfaHomeActivity : AnkiActivity(R.layout.activity_cfa_home) {
             // private WebView thread.
             activity.runOnUiThread {
                 when (target) {
+                    "ethics" -> activity.startActivity(CfaEthicsStudyActivity.getIntent(activity))
                     "readiness" -> activity.startActivity(CfaExamReadinessActivity.getIntent(activity))
                     "conceptmap" -> activity.startActivity(CfaConceptMapActivity.getIntent(activity))
                     "priority" -> activity.startActivity(Intent(activity, CfaExamPriorityActivity::class.java))

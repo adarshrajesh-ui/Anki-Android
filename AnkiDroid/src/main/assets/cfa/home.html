@@ -20,7 +20,7 @@
   :root{
     --ink:#122B46; --muted:#4D5C6D; --faint:#68707D;
     --line:#E7EBEF; --surface:#F3F6F8; --bg:#ffffff;
-    --navy:#122B46; --accent:#DA5C01; --accent-ink:#A84500;
+    --navy:#122B46; --accent:#DA5C01; --accent-soft:#FCEBDA; --accent-ink:#A84500;
     --warn:#B45309; --warn-soft:#FDF3E7; --green:#007E56;
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   }
@@ -57,9 +57,11 @@
   .ctas{display:grid; grid-template-columns:1fr; gap:10px;}
   .cta{display:block; width:100%; text-align:left; background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:14px 15px; cursor:pointer; font-family:var(--sans); color:var(--ink); -webkit-appearance:none;}
   .cta:active{background:var(--surface);}
-  .cta.is-primary{background:var(--navy); border-color:var(--navy);}
-  .cta.is-primary .c-label{color:#fff;}
-  .cta.is-primary .c-sub{color:#c9d4e0;}
+  /* Featured/primary drill — the warm accent-soft tile, matching the desktop
+     CfaHomePage `.cfa-home__cta.is-primary` (one consistent design system). */
+  .cta.is-primary{background:var(--accent-soft); border-color:var(--accent);}
+  .cta.is-primary .c-label{color:var(--ink);}
+  .cta.is-primary .c-sub{color:var(--muted);}
   .cta .c-label{display:block; font-size:15px; font-weight:600; color:var(--ink);}
   .cta .c-sub{display:block; font-size:12.5px; color:var(--muted); margin-top:2px;}
 
@@ -133,10 +135,11 @@
   // Each routes to a native CFA screen through the AndroidCfaHome bridge, so the
   // Home is the phone's CFA nav hub (Study / Concept Map / Readiness / Ethics).
   var CTAS = [
-    { target: "priority", label: "Study by Exam Priority", sub: "Weakest, heaviest-weighted cards first", primary: true },
+    { target: "ethics", label: "Study Ethics — Minimal Pairs", sub: "The flagship ethics discrimination drill", primary: true },
+    { target: "priority", label: "Study by Exam Priority", sub: "Weakest, heaviest-weighted cards first" },
     { target: "readiness", label: "Exam Readiness", sub: "The honest pass / fail report" },
     { target: "conceptmap", label: "Concept Map", sub: "Your radial mastery map" },
-    { target: "decks", label: "Browse all decks", sub: "The full CFA deck list (Ethics lives here)" }
+    { target: "decks", label: "Browse all decks", sub: "The full CFA deck list" }
   ];
   var ctasEl = document.getElementById("ctas");
   CTAS.forEach(function (c) {
