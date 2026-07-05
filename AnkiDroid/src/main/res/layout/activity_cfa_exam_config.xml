@@ -41,7 +41,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="ANKICFA · CFA LEVEL II"
+                android:text="@string/cfa_brand_eyebrow"
                 android:textColor="@color/cfa_accent"
                 android:textSize="11sp"
                 android:letterSpacing="0.12"
@@ -80,7 +80,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="@string/cfa_exam_config_save"
+                android:text="@string/save"
                 android:backgroundTint="@color/cfa_navy"
                 android:textColor="@android:color/white" />
 

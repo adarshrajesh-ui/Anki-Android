@@ -1,0 +1,144 @@
+CFA Speedrun — Mobile item M5: packaged phone build (Sunday deliverable)
+========================================================================
+Branch: gnhf/speedrun-mobile
+Worktree: /Users/adarshrajesh/wed/AnkiDroid-gnhf-worktrees/speedrun-mobile
+Date: 2026-07-04
+
+GOAL (SPEEDRUN-MOBILE-PLAN.md M5 [P2]):
+  "Packaged phone build (Sunday). Signed release APK if a keystore is
+   available; else assembleRelease unsigned + a BLOCKED note."
+
+RESULT: DONE — SIGNED release APKs built, verified, installed on the
+emulator, and shown running the native ankiCFA shell + flagship Exam
+Readiness screen (device-observable). NOT blocked: a release keystore is
+available (tools/fallback-release-keystore.jks, my-key / Test@123).
+
+------------------------------------------------------------------------
+1. BUILD
+------------------------------------------------------------------------
+Command:  ./gradlew :AnkiDroid:assembleFullRelease
+Flavor:   full  (the generic / F-Droid-style flavor; not play/amazon)
+Build:    release — R8/minify ON (minifyEnabled true), proguard-android-
+          optimize + proguard-rules.pro, resource shrinking, per-ABI splits.
+Backend:  LOCAL fork engine (local_backend=true) — the packaged
+          librsdroid.so is the CFA fork with the shared compute_cfa_scores
+          RPC compiled in (48.3 MB in the arm64 APK; symbols stripped by
+          R8 as expected — the RPC dispatches by protobuf method index, not
+          by exported symbol name).
+Result:   BUILD SUCCESSFUL in 1m 09s (after fixing 15 lint-vital errors,
+          see §4). versionName 2.25.0alpha1, versionCode 322500101,
+          applicationId com.ichi2.anki (release; debug uses .debug).
+
+Artifacts (AnkiDroid/build/outputs/apk/full/release/):
+  AnkiDroid-full-arm64-v8a-release.apk    65,359,472 B  sha256 c22ee390e32c45c49749fc857f092f776090011eea342f24d6c06c3339a1d724
+  AnkiDroid-full-armeabi-v7a-release.apk  17,045,101 B  sha256 10cfa68af4206504229611e1bfa46eaab3879bdc6898a91f08faa94e68c3a676
+  AnkiDroid-full-x86_64-release.apk       17,048,604 B  sha256 8b808e1fd693e3db0a88b3218432ddaa77c25c7b99c1a5e6f6ea294b01618d3a
+  AnkiDroid-full-x86-release.apk          17,047,125 B  sha256 95b233e756a5941c2690b62b07957075719904f3a52de7c8d7a56b44d304f414
+(arm64 is larger because the emulator/most phones are arm64 and it bundles
+the full native .so; the other ABIs are the same app for other CPUs.)
+
+------------------------------------------------------------------------
+2. SIGNATURE VERIFICATION (apksigner, build-tools 36.0.0)
+------------------------------------------------------------------------
+$ apksigner verify -v AnkiDroid-full-arm64-v8a-release.apk
+  Verifies
+  Verified using v1 scheme (JAR signing): false
+  Verified using v2 scheme (APK Signature Scheme v2): true
+  Verified using v3 scheme: false ... Number of signers: 1
+$ apksigner verify --print-certs (same APK)
+  Signer #1 certificate DN: CN=Sahil Ahmad, OU=mru, O=mru c, ...
+  Signer #1 certificate SHA-256 digest: 0a8ebeea7a7d04f21a737debedfb0b2ec439c84936e4bb69dc7f14894f0be42a
+The signer SHA-256 (0a8ebeea…) EXACTLY matches the fallback release keystore
+entry `my-key` (keytool -list showed 0A:8E:BE:EA:7A:7D:04:F2:…:4F:0B:E4:2A).
+=> the APK is genuinely signed with the release keystore (v2 scheme).
+
+------------------------------------------------------------------------
+3. DEVICE-OBSERVABLE: installs + launches + renders CFA UI (emulator-5554)
+------------------------------------------------------------------------
+Emulator ABI: arm64-v8a → installed the arm64 APK.
+$ adb install -r AnkiDroid-full-arm64-v8a-release.apk    → Success
+Packages after install:
+  com.ichi2.anki.debug   (the dev build used for M1–M4)
+  com.ichi2.anki         (this NEW signed release build) ← distinct package
+
+Launched com.ichi2.anki/.IntentHandler (fresh install → onboarding):
+  01-release-first-run.png    — first-run intro ("Study less / Remember
+                                 more"), Get started / Sync from AnkiWeb.
+  02-release-permissions.png  — "AnkiDroid needs some permissions"
+                                 (All files access). Granted via appops
+                                 MANAGE_EXTERNAL_STORAGE=allow, relaunched.
+  03-release-deckpicker.png   — native ankiCFA DeckPicker: title "ankiCFA /
+                                 23 cards due", CFA + Ethics Pairs + Study —
+                                 Ethics Minimal-Pairs + CFA Level II decks,
+                                 "Studied 28 cards in 2.54 minutes today".
+                                 => the packaged release reads the real CFA
+                                 collection (all-files access → shared
+                                 external AnkiDroid dir).
+  04-release-exam-readiness.png — nav drawer → Exam Readiness. The FLAGSHIP
+                                 CFA screen renders in the release build:
+                                 eyebrow "ANKICFA · CFA LEVEL II" (the exact
+                                 @string/cfa_brand_eyebrow extracted in the
+                                 lint fix), "Source: on-device (deterministic)",
+                                 Readiness/Memory/Performance all honestly
+                                 "N/A — abstaining" with full give-up reasons
+                                 (22 graded reviews (need 200), 0% coverage
+                                 (need 50%), 21 first-seen (need 30)), and the
+                                 8 canonical CFA topics per-topic-recall list.
+Top activity confirmed each step via `adb dumpsys activity activities`
+(topResumedActivity=com.ichi2.anki/.CfaExamReadinessActivity for the last).
+No reviews were performed from the release build, so the shared collection
+state proven in M2–M4 is untouched.
+
+------------------------------------------------------------------------
+4. LINT-VITAL FIXES (release build enforces lint; 15 CFA errors fixed)
+------------------------------------------------------------------------
+The release build gates on lintVitalFullRelease, which caught 15 genuine
+quality errors introduced by the CFA UI code. All fixed properly (NOT
+baselined). Fixes (files under AnkiDroid/src/main):
+  * HardcodedText x2: extracted "ANKICFA · CFA LEVEL II" to
+    @string/cfa_brand_eyebrow (res/values/cfa.xml) and referenced it in
+    activity_cfa_exam_config.xml + activity_cfa_exam_readiness.xml.
+  * DuplicateCrowdInStrings "Save": deleted cfa_exam_config_save, the
+    config Save button now reuses the upstream @string/save.
+  * DuplicateCrowdInStrings "Exam Readiness": added `comment=` attributes
+    to cfa_nav_exam_readiness + cfa_title_exam_readiness explaining the
+    intentional nav-vs-title duplication.
+  * FixedMenuTitleLength: shortened cfa_ai_fill "AI Fill (generate empty
+    side)" (29 chars) → "AI Fill (empty side)" (20).
+  * MenuTitleMaxLengthAttr x3: added maxLength="28" to cfa_nav_exam_readiness,
+    cfa_nav_sync_account, cfa_ai_fill.
+  * UnusedResources x6: removed the orphan string cfa_readiness_refresh;
+    marked the 5 currently-unused CFA design-system palette colors
+    (cfa_navy_hover, cfa_accent_soft, cfa_pass, cfa_fail, cfa_line) with
+    tools:ignore="UnusedResources" (intentionally-complete token set for
+    the Phase B UI refactor).
+  * DirectSystemCurrentTimeMillisUsage (CfaScores.kt:197): kept
+    System.currentTimeMillis() with @Suppress + a documented rationale —
+    the RPC is called with now=0 so the native engine uses its own wall
+    clock; the Kotlin fallback MUST use the same clock or RPC↔fallback
+    parity breaks (the 1e-6 CfaScoresProviderTest parity assert). A first
+    attempt using TimeManager.time.intTimeMS() proved this: it flipped that
+    parity test red (fallback 0.99534 vs RPC 1.0, diff 0.0047) because the
+    Robolectric mock clock diverges from the engine's real clock. Reverted.
+
+------------------------------------------------------------------------
+5. TESTS (kept green)
+------------------------------------------------------------------------
+$ ./gradlew :AnkiDroid:testFullDebugUnitTest --tests "*Cfa*"
+  19 CFA tests across CfaAiClientTest(7) CfaExamConfigTest(3)
+  CfaExamQueueTest(1) CfaScorerTest(2) CfaScoresProviderTest(3)
+  CfaBootstrapTest(1) CfaBrandingTest(2) → all GREEN (incl. the RPC↔fallback
+  1e-6 parity test after the lint-fix revert).
+$ ./gradlew :AnkiDroid:lintVitalFullRelease → BUILD SUCCESSFUL (0 errors).
+
+HONEST NOTES:
+  - Signed with the repo's FALLBACK test keystore (Test@123), not a private
+    Play upload key — appropriate for a speedrun artifact; a real store
+    release would swap in KEYSTOREPATH/KEYSTOREPWD/KEYALIAS/KEYPWD env vars
+    (the release signingConfig already reads them).
+  - Per-ABI split APKs (universal APK is off for release by default); an
+    AAB (bundleFullRelease) was not built this pass — the plan asks for a
+    release APK, which is delivered and installs/runs.
+  - The release build's Exam Readiness shows 8 canonical topics (the mobile
+    fork backend's topic set); the desktop A7 8→10 extension is desktop-only
+    and not merged to the mobile engine — consistent, not a regression.

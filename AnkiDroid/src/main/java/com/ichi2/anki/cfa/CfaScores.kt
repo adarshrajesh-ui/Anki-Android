@@ -193,6 +193,14 @@ object CfaScorer {
         // desktop reference uses), so this stays consistent with the RPC math.
         val today = col.sched.today
         val nextDayAt = col.sched.dayCutoff
+
+        // Real wall clock ON PURPOSE (not TimeManager): the shared Rust
+        // `computeCfaScores` RPC is invoked with now=0, which makes the native
+        // engine use its own system wall clock for FSRS retrievability. The
+        // Kotlin fallback must use the same clock or RPC↔fallback parity breaks
+        // (a mock/collection clock diverges from the engine's, failing the
+        // 1e-6 parity test). See CfaScoresProvider (now = 0L).
+        @Suppress("DirectSystemCurrentTimeMillisUsage")
         val nowSecs = System.currentTimeMillis() / 1000
 
         data class CardRow(

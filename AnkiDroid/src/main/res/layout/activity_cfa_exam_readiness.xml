@@ -52,7 +52,7 @@
                     android:id="@+id/cfa_eyebrow"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="ANKICFA · CFA LEVEL II"
+                    android:text="@string/cfa_brand_eyebrow"
                     android:textColor="@color/cfa_accent"
                     android:textSize="11sp"
                     android:letterSpacing="0.12"

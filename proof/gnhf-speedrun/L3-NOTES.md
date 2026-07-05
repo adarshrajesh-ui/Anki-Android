@@ -68,7 +68,28 @@ Plan: `SPEEDRUN-MOBILE-PLAN.md`. Track M1–M5 + mobile UI passes here.
   (`found_on_server:true`, re-verified by a fresh full-download). No fabrication.
   Evidence: `proof/gnhf-speedrun/L3/offline-then-sync.txt` + `offline-then-sync/`
   (6-shot sequence + `cfa_server_inspect.py`).
-- M5 packaged phone build — TODO
+- **M5 [P2] packaged phone build — DONE.**
+  SIGNED release APKs built: `./gradlew :AnkiDroid:assembleFullRelease` (full
+  flavor, R8/minify ON, per-ABI splits) → 4 APKs under
+  `AnkiDroid/build/outputs/apk/full/release/`, versionName 2.25.0alpha1,
+  applicationId com.ichi2.anki. Signed with the repo fallback release keystore
+  (`tools/fallback-release-keystore.jks`, my-key): `apksigner verify -v`
+  reports "Verifies / v2 scheme: true", signer SHA-256 0a8ebeea… EXACTLY
+  matching the keystore entry. The packaged librsdroid.so is the CFA fork
+  engine (48 MB, RPC dispatch by proto index; symbols stripped by R8).
+  Device-observable on emulator-5554: `adb install -r` the arm64 APK → Success
+  (distinct package from com.ichi2.anki.debug); launched → first-run intro →
+  permissions → native ankiCFA DeckPicker (CFA / Ethics Pairs / CFA Level II
+  decks, "23 cards due") → nav-drawer Exam Readiness RENDERS (source=on-device,
+  eyebrow "ANKICFA · CFA LEVEL II", honest N/A-abstaining, 8 canonical topics).
+  Release build also FORCED 15 genuine lint-vital fixes in the CFA UI
+  (HardcodedText→@string/cfa_brand_eyebrow, DuplicateCrowdInStrings,
+  MenuTitleMaxLengthAttr/FixedMenuTitleLength, UnusedResources,
+  DirectSystemCurrentTimeMillisUsage@Suppress w/ parity rationale) — all fixed
+  properly, NOT baselined; the 19 `*Cfa*` unit tests + lintVitalFullRelease
+  stay green. Evidence: `proof/gnhf-speedrun/L3/packaged-build.txt` +
+  `packaged-build/` (01 first-run, 02 permissions, 03 deckpicker,
+  04 exam-readiness). **Mobile Phase A (M1–M5) COMPLETE.**
 - Phase B mobile UI passes (≥3) — TODO
 
 ## Key learnings
@@ -106,6 +127,21 @@ Plan: `SPEEDRUN-MOBILE-PLAN.md`. Track M1–M5 + mobile UI passes here.
   a one-way change. Extra sync rounds do NOT fix it; a ~50ms settle before each
   review (so its mod is strictly later than the last sync) does. Fixed in the
   desktop repo's _review() helper.
+- M5: the release build gates on `lintVitalFullRelease` (lint runs ONLY on
+  release, not debug), so `assembleFullRelease` surfaced 15 CFA-code lint
+  errors that debug builds/unit tests never see — always run the release build
+  before claiming the mobile app "ships". Fix them properly, don't baseline.
+- M5 parity gotcha: CfaScores.kt MUST use `System.currentTimeMillis()` (not
+  TimeManager) for the FSRS `nowSecs` — the RPC is called with now=0 so the
+  native engine uses its own wall clock, and the Kotlin fallback has to match
+  or the 1e-6 CfaScoresProviderTest parity assert fails (Robolectric's mock
+  clock diverges). Suppress DirectSystemCurrentTimeMillisUsage with a comment.
+- M5 install: the release build's applicationId is `com.ichi2.anki` while debug
+  is `com.ichi2.anki.debug`, so `adb install -r` the SIGNED release APK
+  installs ALONGSIDE the dev build (no signature-mismatch/uninstall needed) and
+  reaches the same shared external AnkiDroid collection once MANAGE_EXTERNAL_
+  STORAGE is granted (`adb shell appops set com.ichi2.anki
+  MANAGE_EXTERNAL_STORAGE allow`, then relaunch to clear the permissions gate).
 - The mobile CFA backend is a LOCAL fork build (`../Anki-Android-Backend`,
   `local_backend=true`), NOT the published `anki-android-backend` AAR (which lacks all
   CFA RPCs). `cfa_build_fork_engine.sh` clones `~/AlphaWeek2/ankiCFA` (main) into

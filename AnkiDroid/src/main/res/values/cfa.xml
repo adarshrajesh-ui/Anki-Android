@@ -9,24 +9,30 @@
 -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
-    <!-- Brand palette (from the CFA design system single source of truth). -->
+    <!--
+      Brand palette (from the CFA design system single source of truth).
+      This is an intentionally complete token set mirroring the desktop
+      design system; some tokens are consumed by the Phase B UI refactor
+      rather than the current layouts, so the unused ones are marked.
+    -->
     <color name="cfa_navy">#122B46</color>
-    <color name="cfa_navy_hover">#0E2238</color>
+    <color name="cfa_navy_hover" tools:ignore="UnusedResources">#0E2238</color>
     <color name="cfa_accent">#DA5C01</color>
-    <color name="cfa_accent_soft">#FCEBDA</color>
-    <color name="cfa_pass">#15803D</color>
-    <color name="cfa_fail">#B91C1C</color>
+    <color name="cfa_accent_soft" tools:ignore="UnusedResources">#FCEBDA</color>
+    <color name="cfa_pass" tools:ignore="UnusedResources">#15803D</color>
+    <color name="cfa_fail" tools:ignore="UnusedResources">#B91C1C</color>
     <color name="cfa_warn">#B45309</color>
     <color name="cfa_surface">#F3F6F8</color>
-    <color name="cfa_line">#E7E9EC</color>
+    <color name="cfa_line" tools:ignore="UnusedResources">#E7E9EC</color>
     <color name="cfa_ink">#122B46</color>
     <color name="cfa_muted">#4D5C6D</color>
 
     <!-- Nav drawer / branding. Not translated (feature in progress). -->
-    <string name="cfa_nav_exam_readiness">Exam Readiness</string>
-    <string name="cfa_title_exam_readiness">Exam Readiness</string>
+    <string name="cfa_brand_eyebrow">ANKICFA · CFA LEVEL II</string>
+    <string name="cfa_nav_exam_readiness" comment="Nav-drawer menu entry that opens the Exam Readiness screen; same words as its screen title but a distinct menu string" maxLength="28">Exam Readiness</string>
+    <string name="cfa_title_exam_readiness" comment="Action-bar title of the Exam Readiness screen; same words as the nav-drawer entry but a distinct title string">Exam Readiness</string>
     <!-- Log out entry (under Statistics): opens the sync account screen (Log out when logged in, Log in otherwise). -->
-    <string name="cfa_nav_sync_account">Log out</string>
+    <string name="cfa_nav_sync_account" maxLength="28">Log out</string>
 
     <!-- Exam Readiness screen. -->
     <string name="cfa_readiness_memory">Memory</string>
@@ -35,18 +41,17 @@
     <string name="cfa_readiness_per_topic">Per-topic recall</string>
     <string name="cfa_readiness_source_fallback">Source: on-device (deterministic)</string>
     <string name="cfa_readiness_source_rpc">Source: shared engine</string>
-    <string name="cfa_readiness_refresh">Refresh</string>
 
     <!-- Exam config editor. -->
     <string name="cfa_exam_config_title">Exam configuration</string>
     <string name="cfa_exam_config_date_label">Exam date</string>
     <string name="cfa_exam_config_pick_date">Pick date</string>
-    <string name="cfa_exam_config_save">Save</string>
+    <!-- Save button reuses the upstream @string/save to avoid a duplicate string. -->
     <string name="cfa_exam_config_saved">Exam configuration saved</string>
     <string name="cfa_exam_config_no_date">No exam date set</string>
 
     <!-- AI Fill (bidirectional tab-fill) — generate the empty side via the AI proxy. -->
-    <string name="cfa_ai_fill">AI Fill (generate empty side)</string>
+    <string name="cfa_ai_fill" maxLength="28">AI Fill (empty side)</string>
     <string name="cfa_ai_fill_drafting">Generating with AI…</string>
     <string name="cfa_ai_fill_no_two_fields">This note type has no separate front/back to fill.</string>
     <string name="cfa_ai_fill_need_one_side">Type one side and leave the other empty, then AI Fill generates it.</string>
