@@ -23,6 +23,23 @@
     <!-- Pressed variant of the accent for the FAB / Study button (shell refactor). -->
     <color name="cfa_accent_hover">#B34B01</color>
     <color name="cfa_accent_soft" tools:ignore="UnusedResources">#FCEBDA</color>
+    <!--
+      Phase B Pass-3 (ruthless) WCAG AA contrast audit. The warm brand accent
+      cfa_accent (#DA5C01) is only ~3.8:1 on white/navy, so it FAILS WCAG AA
+      (>=4.5:1) as small readable TEXT — it is safe only for large fills, the FAB
+      tint, ripples and progress tints. These two accent-TEXT tokens keep the warm
+      CFA identity while clearing AA on the two surfaces the app actually renders
+      accent text on (the desktop design system solves the same problem with a
+      separate AA-safe eyebrow colour; see docs/cfa/DESIGN-SYSTEM.md):
+        - cfa_accent_ink   for small accent text on LIGHT backgrounds
+          (white 5.97:1 / cfa_surface 5.50:1) — the Readiness & Config eyebrows
+          and the exam countdown.
+        - cfa_accent_on_navy for small accent text on the NAVY drawer header
+          (navy 5.74:1) — darkening (like accent_ink) would REDUCE contrast on
+          navy, so navy needs a brighter warm tint instead.
+    -->
+    <color name="cfa_accent_ink">#A84500</color>
+    <color name="cfa_accent_on_navy">#F0894A</color>
     <color name="cfa_pass" tools:ignore="UnusedResources">#15803D</color>
     <color name="cfa_fail" tools:ignore="UnusedResources">#B91C1C</color>
     <!-- cfa_warn reserved for a genuine near-deadline warning; abstain/empty

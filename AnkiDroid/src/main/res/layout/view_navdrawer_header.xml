@@ -29,7 +29,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="3dp"
         android:text="@string/cfa_brand_tagline"
-        android:textColor="@color/cfa_accent"
+        android:textColor="@color/cfa_accent_on_navy"
         android:textSize="12sp"
         android:letterSpacing="0.08"
         android:textAllCaps="true" />
