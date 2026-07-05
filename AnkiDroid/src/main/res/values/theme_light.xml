@@ -53,12 +53,23 @@
         <item name="currentDeckBackground">@drawable/item_background_selected</item>
         <item name="currentDeckBackgroundColor">#ececec</item>
         <item name="focusedRowBackgroundColor">#ececec</item>
-        <item name="dynDeckColor">#2222bb</item>
+        <!-- Filtered/dynamic deck names were stock AnkiDroid blue (#2222bb),
+             which leaked through the navy CFA shell on the primary landing
+             screen (Phase B Pass-2). The CFA study decks (Exam Priority,
+             Ethics Minimal-Pairs) are curated study modes, not an Anki
+             implementation detail to surface in loud blue, so their names now
+             read in the brand navy — the deck list is one cohesive branded list. -->
+        <item name="dynDeckColor">@color/cfa_navy</item>
         <item name="deckDivider">@drawable/divider</item>
         <item name="expandRef">@drawable/ic_chevron_right_black</item>
         <item name="collapseRef">@drawable/ic_expand_more_black</item>
         <!-- Count colors -->
-        <item name="newCountColor">@color/material_indigo_700</item>
+        <!-- The "new" count was indigo-blue (material_indigo_700) — the other
+             stock-blue leak on the DeckPicker (Phase B Pass-2). Retoned to the
+             brand navy so it reads on-brand while keeping the three-way count
+             distinction (new = navy, learn = red, review = green); the semantic
+             learn/review colours are the learned Anki affordance, kept as-is. -->
+        <item name="newCountColor">@color/cfa_navy</item>
         <item name="learnCountColor">@color/material_red_700</item>
         <item name="reviewCountColor">@color/material_green_800</item>
         <item name="buryCountColor">@color/disabled_gray_light</item>

@@ -1,0 +1,41 @@
+Phase B — MOBILE Pass 2 (harsher): DeckPicker stock-blue leak
+=============================================================
+Device: emulator-5554 (Android 14), real running debug build
+(com.ichi2.anki.debug), branch gnhf/speedrun-mobile.
+
+FINDING (MAJOR, M6-1): After the Pass-1 shell refactor branded the toolbar,
+status bar, nav drawer, FAB and Reviewer navy, TWO stock-AnkiDroid blue tokens
+still leaked through on the primary landing screen (DeckPicker):
+  1. Filtered/dynamic deck NAMES ("Study — Ethics Minimal-Pairs",
+     "CFA Exam Priority") rendered in stock blue (dynDeckColor = #2222bb).
+  2. The "new" card COUNT numbers (20 / 29 / 99 / 1) rendered in indigo-blue
+     (newCountColor = @color/material_indigo_700).
+Together these made the DeckPicker read blue-accented despite the navy shell —
+the "non-native-CFA feel" the objective flags, now on the one screen the user
+opens first every session.
+
+FIX (theme_light.xml, the shipped default day theme):
+  - dynDeckColor  #2222bb                 -> @color/cfa_navy
+  - newCountColor @color/material_indigo_700 -> @color/cfa_navy
+Rationale: the CFA study decks (Exam Priority, Ethics Minimal-Pairs) are curated
+study modes, not an Anki implementation detail to surface in loud blue, so their
+names read in the brand navy — the deck list is one cohesive branded list.
+The "new" count keeps the three-way count distinction (new = navy, learn = red,
+review = green); the semantic learn/review colours (the learned Anki affordance)
+are unchanged, matching the M5-2 decision to preserve learned ease/count colours.
+The orange FAB remains the single warm CFA accent.
+
+BEFORE: proof/gnhf-speedrun/mobile-ui/pass-2-before/01-deckpicker.png
+        (filtered deck names + counts in stock blue/indigo)
+AFTER : proof/gnhf-speedrun/mobile-ui/pass-2/01-deckpicker.png
+        (deck names + new-counts in brand navy; red learn / grey zero unchanged)
+        proof/gnhf-speedrun/mobile-ui/pass-2/02-nav-drawer.png
+        (drawer navy lockup + navy "Decks" selected; dimmed DeckPicker behind
+         shows the navy counts — no regression)
+
+GATES (green): ./gradlew :AnkiDroid:installFullDebug (BUILD SUCCESSFUL),
+:AnkiDroid:lintVitalFullRelease + ktlintCheck (BUILD SUCCESSFUL). Change is
+theme-resource-only (no Kotlin/logic touched) so the *Cfa* unit tests are
+unaffected (green at the shell refactor). material_indigo_700 is a library
+(anki-common) colour with other definitions, not an app resource, so dropping
+the app reference does not trip UnusedResources.
