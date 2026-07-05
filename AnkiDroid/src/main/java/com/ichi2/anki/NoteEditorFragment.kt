@@ -1578,6 +1578,13 @@ class NoteEditorFragment :
             if (!silent) showSnackbar(R.string.cfa_ai_fill_need_one_side)
             return
         }
+        // Honour the synced AI toggle BEFORE any "drafting" flash: when AI is off
+        // (turned off here or on the desktop, then synced), the fill short-circuits
+        // with no network call and the card is left unchanged — deterministic.
+        if (!CfaAiClient.aiEnabled(getColUnsafe, CfaAiClient.TABFILL_KEY)) {
+            showSnackbar(R.string.cfa_ai_fill_off)
+            return
+        }
         launchCatchingTask {
             showSnackbar(R.string.cfa_ai_fill_drafting)
             val result = withContext(Dispatchers.IO) { CfaAiClient.fill(getColUnsafe, front, back) }
@@ -1586,6 +1593,8 @@ class NoteEditorFragment :
                 fields[idx].setText(result.text)
                 val side = if (result.target == "front") "front" else "back"
                 showSnackbar(getString(R.string.cfa_ai_fill_done, side, result.model ?: "ai"))
+            } else if (result.error == "ai_off") {
+                showSnackbar(R.string.cfa_ai_fill_off)
             } else {
                 showSnackbar(getString(R.string.cfa_ai_fill_unavailable, result.error ?: "try again"))
             }

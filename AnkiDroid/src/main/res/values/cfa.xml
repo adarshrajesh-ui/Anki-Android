@@ -100,6 +100,7 @@
     <string name="cfa_ai_fill_need_one_side">Type one side and leave the other empty, then AI Fill generates it.</string>
     <string name="cfa_ai_fill_done">Drafted the %1$s with AI (%2$s)</string>
     <string name="cfa_ai_fill_unavailable">AI unavailable — %1$s. Card left unchanged.</string>
+    <string name="cfa_ai_fill_off">AI is turned off. Turn it on to draft with AI; the card is left unchanged.</string>
 
     <!-- Exam-priority study action. -->
     <string name="cfa_study_by_priority">Study by Exam Priority</string>

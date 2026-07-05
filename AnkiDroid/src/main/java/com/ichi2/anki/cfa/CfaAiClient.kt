@@ -81,6 +81,17 @@ object CfaAiClient {
     const val URL_KEY = "cfa_ai_proxy_url"
     const val TOKEN_KEY = "cfa_ai_proxy_token"
 
+    // AI-toggle contract — SHARED with the desktop `qt/aqt/cfa_ai_settings.py`
+    // and stored in col.conf, so it SYNCS: turning AI off on the desktop is
+    // honoured on the phone (and vice-versa). A feature's AI path runs only when
+    // the master switch AND that feature's switch are on; both DEFAULT ON
+    // (AI-first) to match the desktop `get_ai_toggles`. When off, the phone must
+    // NOT call the proxy — it degrades to its deterministic fallback exactly as
+    // the desktop does, and honestly reports `error == "ai_off"`.
+    const val MASTER_KEY = "cfa_ai_enabled"
+    const val TABFILL_KEY = "cfa_ai_tabfill_enabled"
+    const val GRADING_KEY = "cfa_ai_grading_enabled"
+
     // Emulator -> host machine. Override via the synced col.conf keys above so a
     // real device can point at the LAN address of the machine running the proxy.
     const val DEFAULT_URL = "http://10.0.2.2:27702"
@@ -91,16 +102,41 @@ object CfaAiClient {
     fun proxyToken(col: Collection): String = (col.config.get<String>(TOKEN_KEY) ?: "").ifBlank { DEFAULT_TOKEN }
 
     /**
+     * Pure toggle rule (desktop `ai_active`): AI runs for a feature only when the
+     * [master] switch AND the [feature] switch are on. Both DEFAULT ON when unset
+     * (null), matching the desktop AI-first defaults.
+     */
+    fun aiEnabled(
+        master: Boolean?,
+        feature: Boolean?,
+    ): Boolean = (master ?: true) && (feature ?: true)
+
+    /** Whether AI for [featureKey] (TABFILL_KEY / GRADING_KEY) is enabled by the SYNCED toggles. */
+    fun aiEnabled(
+        col: Collection,
+        featureKey: String,
+    ): Boolean = aiEnabled(col.config.get<Boolean>(MASTER_KEY), col.config.get<Boolean>(featureKey))
+
+    /** The honest AI-off tab-fill result — no network call, deterministic fallback (desktop error "ai_off"). */
+    fun aiOffFill(): CfaAiResult = CfaAiResult(false, "", null, "fallback", null, "ai_off")
+
+    /**
      * Bidirectional tab-fill via the proxy configured in [col]: send both sides,
      * the server generates whichever is empty (front->back or back->front).
-     * Never throws.
+     * Skips the network entirely when the synced AI toggle is off (returns the
+     * honest "ai_off" fallback). Never throws.
      */
     fun fill(
         col: Collection,
         front: String,
         back: String,
         poster: CfaHttpPost = DEFAULT_POST,
-    ): CfaAiResult = fill(proxyUrl(col), proxyToken(col), front, back, poster)
+    ): CfaAiResult =
+        if (!aiEnabled(col, TABFILL_KEY)) {
+            aiOffFill()
+        } else {
+            fill(proxyUrl(col), proxyToken(col), front, back, poster)
+        }
 
     /** Pure overload: POST {front, back} to the proxy at [baseUrl]; parse the result. */
     fun fill(
@@ -156,18 +192,30 @@ object CfaAiClient {
         standard: String = "",
         poster: CfaHttpPost = DEFAULT_POST,
     ): CfaGradeResult =
-        grade(
-            proxyUrl(col),
-            proxyToken(col),
-            passage,
-            answerVerdict,
-            judgedVerdict,
-            goldSpans,
-            learnerSpans,
-            itemId,
-            standard,
-            poster,
-        )
+        if (!aiEnabled(col, GRADING_KEY)) {
+            // AI grading toggled off (synced) — skip the proxy; the card's own
+            // deterministic grade stays authoritative. Honest error "ai_off".
+            fallbackGrade(standard, itemId, "ai_off")
+        } else {
+            grade(
+                proxyUrl(col),
+                proxyToken(col),
+                passage,
+                answerVerdict,
+                judgedVerdict,
+                goldSpans,
+                learnerSpans,
+                itemId,
+                standard,
+                poster,
+            )
+        }
+
+    /** The honest AI-off grade result (no network) — the card's deterministic grade stays authoritative. */
+    fun aiOffGrade(
+        standard: String = "",
+        itemId: String = "",
+    ): CfaGradeResult = fallbackGrade(standard, itemId, "ai_off")
 
     /**
      * Pure overload: POST the attempt to `/cfa/grade` at [baseUrl] and parse the

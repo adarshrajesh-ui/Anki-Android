@@ -216,6 +216,48 @@ class CfaAiClientTest {
         assertThat(r.error?.startsWith("client_error:"), equalTo(true))
     }
 
+    // ----- synced AI-toggle gate (cfa_ai_enabled + per-feature, shared with desktop) -----
+
+    @Test
+    fun ai_toggle_rule_requires_master_and_feature() {
+        // Both on -> enabled.
+        assertThat(CfaAiClient.aiEnabled(true, true), equalTo(true))
+        // Master off -> disabled regardless of feature.
+        assertThat(CfaAiClient.aiEnabled(false, true), equalTo(false))
+        // Feature off -> disabled even with master on.
+        assertThat(CfaAiClient.aiEnabled(true, false), equalTo(false))
+        assertThat(CfaAiClient.aiEnabled(false, false), equalTo(false))
+    }
+
+    @Test
+    fun ai_toggle_defaults_on_when_unset() {
+        // Unset keys default ON (AI-first), matching the desktop get_ai_toggles.
+        assertThat(CfaAiClient.aiEnabled(null, null), equalTo(true))
+        assertThat(CfaAiClient.aiEnabled(null, true), equalTo(true))
+        // An explicit master-off still wins over an unset feature key.
+        assertThat(CfaAiClient.aiEnabled(false, null), equalTo(false))
+    }
+
+    @Test
+    fun ai_off_fill_is_honest_deterministic_fallback() {
+        val r = CfaAiClient.aiOffFill()
+        assertThat(r.ok, equalTo(false))
+        assertThat(r.source, equalTo("fallback"))
+        assertThat(r.error, equalTo("ai_off"))
+        assertThat(r.text, equalTo(""))
+    }
+
+    @Test
+    fun ai_off_grade_is_honest_and_preserves_standard() {
+        val r = CfaAiClient.aiOffGrade("III(B) Fair Dealing", "pair-3")
+        assertThat(r.ok, equalTo(false))
+        assertThat(r.source, equalTo("fallback"))
+        assertThat(r.error, equalTo("ai_off"))
+        // The cited Standard/item is echoed even when AI is off.
+        assertThat(r.standard, equalTo("III(B) Fair Dealing"))
+        assertThat(r.itemId, equalTo("pair-3"))
+    }
+
     @Test
     fun grade_propagates_server_fallback_when_ai_off() {
         val r =
