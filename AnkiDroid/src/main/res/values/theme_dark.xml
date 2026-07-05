@@ -118,9 +118,11 @@
         <item name="buttonShadowColor">#bdbdbd</item>
         <item name="buttonRippleColor">#BABABA</item>
         <item name="buttonForegroundColor">#757575</item>
-        <!-- FAB -->
-        <item name="fab_normal">@color/material_light_blue_700</item>
-        <item name="fab_pressed">@color/material_light_blue_900</item>
+        <!-- FAB / Study button — the single warm CFA accent, matching the light
+             theme's branded FAB (was stock light-blue in dark mode, a glaring brand
+             break vs the orange light-mode FAB). -->
+        <item name="fab_normal">@color/cfa_accent</item>
+        <item name="fab_pressed">@color/cfa_accent_hover</item>
         <!-- Images -->
         <item name="navDrawerImage">@drawable/nav_drawer_logo_dark_theme</item>
         <!-- Dialog styles -->

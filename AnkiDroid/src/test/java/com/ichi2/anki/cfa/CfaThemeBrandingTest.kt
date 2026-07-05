@@ -1,0 +1,99 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// CFA fork — Phase B theme-branding guard.
+//
+// The desktop objective demands "no visibly un-themed stock-Anki screens" and
+// calls out the Android colouring as ugly ("copy the coloring scheme on
+// desktop"). A prior shell refactor branded the LIGHT theme's primary chrome
+// (colorPrimary = cfa_navy, FAB = cfa_accent), but a set of SECONDARY roles were
+// still shipping stock-AnkiDroid light-blue and leaked through the navy shell:
+//   * the Material3 tonal containers (colorSecondaryContainer / the surface
+//     containers) — selected chips, sheets and elevated surfaces,
+//   * the Settings category headers (preferenceCategoryTitleTextColor),
+//   * the editor text-selection highlight, the in-app-browser nav bar, the
+//     snackbar/dialog action-button text and the stepper button background,
+//   * and the DARK theme's FAB, still light-blue while the light-mode FAB is the
+//     warm CFA accent.
+//
+// This guard parses the theme XMLs as text and asserts each retoned attribute
+// now references a CFA token (and NOT the specific stock light-blue it used to),
+// so a regression that re-introduces a stock-blue leak fails the build. The
+// semantic learned colours (ease buttons, flags) are intentionally NOT asserted
+// here — they keep their learned Anki affordance.
+
+package com.ichi2.anki.cfa
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.containsString
+import org.hamcrest.Matchers.equalTo
+import org.hamcrest.Matchers.not
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.io.File
+
+@RunWith(AndroidJUnit4::class)
+class CfaThemeBrandingTest {
+    private fun themeXml(name: String): String {
+        val candidates =
+            listOf(
+                File("src/main/res/values/$name"),
+                File("AnkiDroid/src/main/res/values/$name"),
+            )
+        val file = candidates.firstOrNull { it.exists() }
+        assertThat("$name must exist for this guard", file != null, equalTo(true))
+        return file!!.readText()
+    }
+
+    /** Read the value of a single `<item name="attr">value</item>` line. */
+    private fun attrValue(
+        xml: String,
+        attr: String,
+    ): String {
+        val match = Regex("""<item name="$attr">([^<]*)</item>""").find(xml)
+        assertThat("attr $attr must be present", match != null, equalTo(true))
+        return match!!.groupValues[1].trim()
+    }
+
+    @Test
+    fun light_theme_secondary_roles_are_cfa_branded_not_stock_blue() {
+        val xml = themeXml("theme_light.xml")
+
+        // Legacy AppCompat accent (cursor / selection / checkbox tints).
+        assertThat(attrValue(xml, "colorAccent"), equalTo("@color/cfa_navy"))
+
+        // Material3 tonal containers — selected states + elevated surfaces.
+        assertThat(attrValue(xml, "colorSecondaryContainer"), equalTo("@color/cfa_accent_soft"))
+        assertThat(attrValue(xml, "colorSurfaceContainerHigh"), equalTo("@color/cfa_surface"))
+        assertThat(attrValue(xml, "colorSurfaceContainer"), equalTo("@color/cfa_surface"))
+
+        // Settings category headers → AA-safe warm accent-ink (a CFA eyebrow).
+        assertThat(attrValue(xml, "preferenceCategoryTitleTextColor"), equalTo("@color/cfa_accent_ink"))
+
+        // Editor selection highlight, in-app browser nav bar.
+        assertThat(attrValue(xml, "editTextHighlightColor"), equalTo("@color/cfa_accent_soft"))
+        assertThat(attrValue(xml, "customTabNavBarColor"), equalTo("@color/cfa_navy"))
+
+        // Action-button text on snackbars / dialogs, stepper button background.
+        assertThat(attrValue(xml, "snackbarButtonTextColor"), equalTo("@color/cfa_accent_on_navy"))
+        assertThat(attrValue(xml, "progressDialogButtonTextColor"), equalTo("@color/cfa_navy"))
+        assertThat(attrValue(xml, "incrementerButtonBackground"), equalTo("@color/cfa_navy"))
+
+        // The specific stock light-blue references these replaced must be gone
+        // (material_light_blue_500 is intentionally kept for the "Easy" ease
+        // button, a learned semantic colour, so it is not asserted absent here).
+        assertThat(xml, not(containsString("material_light_blue_800")))
+        assertThat(xml, not(containsString("material_light_blue_300")))
+        assertThat(xml, not(containsString("material_light_blue_200")))
+        assertThat(xml, not(containsString("#0F03A9F4")))
+    }
+
+    @Test
+    fun dark_theme_fab_matches_the_warm_cfa_accent() {
+        val xml = themeXml("theme_dark.xml")
+        assertThat(attrValue(xml, "fab_normal"), equalTo("@color/cfa_accent"))
+        assertThat(attrValue(xml, "fab_pressed"), equalTo("@color/cfa_accent_hover"))
+        // The stock light-blue FAB the dark theme used to ship must be gone.
+        assertThat(xml, not(containsString("material_light_blue_700")))
+    }
+}
