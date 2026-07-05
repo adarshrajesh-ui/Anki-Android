@@ -1,0 +1,115 @@
+M4 — Offline-then-sync + AI-off-still-scores (device-observable)
+================================================================
+Branch: gnhf/speedrun-mobile   Device: emulator-5554 (AVD ankidroid_cfa)
+Package: com.ichi2.anki.debug   Sync server: http://10.0.2.2:27701/ (user cfa)
+Captured: 2026-07-04 (single GNHF run)
+
+GOAL (SPEEDRUN-MOBILE-PLAN.md M4)
+---------------------------------
+Verify (1) an offline review made on the phone SYNCS on reconnect, and
+(2) the CFA scores render with AI OFF. Device-observable, no fabrication.
+
+WHY AI-OFF IS ARCHITECTURALLY HONEST HERE
+-----------------------------------------
+The mobile CFA scoring path (CfaScoresProvider -> shared Rust computeCfaScores
+RPC, Kotlin CfaScorer fallback) is 100% LOCAL — it never calls an LLM or the
+network. The only AI features on mobile are ethics-pair grading and Tab-fill,
+both via the optional proxy (10.0.2.2:27702). Airplane mode makes the AI proxy
+(and the sync server) unreachable, so it is a genuine AI-OFF + OFFLINE state.
+The Readiness screen still renders (see step 3), proving AI-off-still-scores.
+
+BASE (both in sync)
+-------------------
+Phone on-disk collection revlog = 31; server on-disk collection revlog = 31.
+
+STEP 1 — go OFFLINE and review one card
+  Airplane mode ON  (`settings put global airplane_mode_on 1`;
+    device `ping 10.0.2.2` => "Network is unreachable"; status-bar airplane icon).
+  In the AnkiDroid reviewer, answered card 1783137755189
+    ("Name the four broad hedge fund strategy categories.") = GOOD (ease 3).
+  -> phone card 1783137755189: reps 0->1, queue=1 (learning), ivl=-600 (10m).
+  -> phone revlog row p_id = 1783213842513 (ease=3, type=0). Phone revlog 31->32.
+  Screenshots 01/02/03 all show the airplane icon (offline).
+
+  Confirmed the review is OFFLINE-ONLY at this point (server unchanged):
+    SERVER_STATE {"server_revlog": 31, ... "looking_for_id": 1783213842513,
+                  "found_on_server": false}
+  (via cfa_server_inspect.py — a download-only full-download of the server state.)
+
+STEP 2 — scores render WHILE OFFLINE + AI-OFF   [screenshot 04]
+  Still in airplane mode, opened Exam Readiness (nav drawer -> Exam Readiness).
+  The screen RENDERS:
+    Source: on-device (deterministic)   <- no AI, no network
+    READINESS / MEMORY / PERFORMANCE = "N/A — abstaining" with full give-up
+      reasons ("29 graded reviews (need 200), 0% topic coverage (need 50%)";
+      "21 first-seen questions (need 30)").
+    Footer: "29 graded reviews · 0/8 topics covered (0%) · 21 first exposures"
+    Per-topic recall table (all 8 canonical topics listed, "no data").
+  The graded-review count rose 28 -> 29 and first-exposures 20 -> 21, i.e. the
+  screen reflects the just-made OFFLINE review in its LOCAL computation.
+  This is the honest give-up path (abstain until 200 graded / 50% coverage),
+  NOT fabricated scores — and it is produced with AI off and no connectivity.
+
+STEP 3 — reconnect and sync (UPLOAD)   [screenshots 05, 06]
+  Airplane mode OFF (`ping 10.0.2.2` => 0% packet loss). Back on the DeckPicker
+  the Sync icon shows an ORANGE DOT = local changes pending upload (screenshot 05,
+  CFA Level II now "1 1 0" after the Good review; "Studied 28 cards").
+  Tapped Sync. Device logcat (rsdroid, the shared engine):
+    anki::sync::collection::normal: begin stream to server
+    anki::sync::collection::chunks: sending done=true cards=1 notes=0 revlog=1
+    anki::sync::collection::normal: finalize
+    anki::sync::media::syncer: media sync complete
+  i.e. the phone UPLOADED exactly the 1 offline card + 1 offline revlog row.
+  After sync the Sync icon is clean (no dot) — synced (screenshot 06).
+
+GROUND TRUTH — the offline review reached the server
+----------------------------------------------------
+Server on-disk collection (/tmp/cfa-syncserver/cfa/collection.anki2), read
+directly AND re-verified by a fresh full-download:
+    SERVER_STATE {"server_revlog": 32, "server_cards": 660,
+      "looking_for_id": 1783213842513, "found_on_server": true}
+  server revlog 31 -> 32; the phone's offline revlog id 1783213842513
+  (cid 1783137755189, ease=3 Good, type=0, ivl=-600) is now on the server.
+  Server card 1783137755189: reps=1, queue=1, type=1 — matches the phone.
+  The phone could not have invented that millisecond id, so this is airtight
+  causal proof the OFFLINE review uploaded on reconnect.
+
+DEVICE-OBSERVABLE DELTA (the headline)
+  offline review on phone  -> phone revlog 31->32, id 1783213842513 (server absent)
+  reconnect + sync         -> logcat "sending ... revlog=1"; server revlog 31->32,
+                              id 1783213842513 now present on the server.
+  scores rendered the WHOLE time with AI off (airplane) — source=on-device,
+  honest abstain, reflecting the offline review (28->29 graded).
+
+REPRODUCE
+---------
+Phone: airplane ON -> review one card in the reviewer -> open Exam Readiness
+  (renders offline) -> airplane OFF -> tap Sync.
+Server check (ankiCFA desktop repo, built pyenv):
+  out/pyenv/bin/python offline-then-sync/cfa_server_inspect.py <phone_revlog_id>
+  (download-only; prints server revlog count + whether the id is present).
+  Or read the server's on-disk collection directly:
+  sqlite3 /tmp/cfa-syncserver/cfa/collection.anki2 \
+    "select id,cid,ease,type,ivl from revlog order by id desc limit 3;"
+
+ENGINE-LEVEL CORROBORATION (desktop pytest)
+-------------------------------------------
+The offline-then-sync upload path is the same code exercised by
+/Users/adarshrajesh/AlphaWeek2/ankiCFA/pylib/tests/test_cfa_sync.py
+(round-trip: local reviews are pushed to the server and pulled back with the
+revlog counts matching), which is green (see M2/M3 evidence). The AI-off score
+path is pure local compute (CfaScoresProvider RPC/fallback), covered by
+CfaScoresProviderTest (M1, source=rpc + parity to 1e-6).
+
+SCREENSHOT SEQUENCE (NO VIDEO)  proof/gnhf-speedrun/L3/offline-then-sync/
+  01-offline-deckpicker-airplane.png      DeckPicker, airplane icon (offline), 23 due
+  02-offline-reviewer-question.png        reviewer question, airplane icon
+  03-offline-reviewer-answer-4-buttons.png answer + Again/Hard/Good/Easy, airplane icon
+  04-offline-readiness-scores-aioff.png   Exam Readiness renders OFFLINE/AI-off
+                                          (source=on-device, 29 graded, honest abstain)
+  05-online-pending-upload-orange-dot.png back online, Sync icon orange dot (pending)
+  06-online-after-sync-clean.png          after sync, Sync icon clean (uploaded)
+
+STATUS: M4 DONE — offline review syncs on reconnect (device-observable, server
+revlog 31->32 with the phone's exact offline revlog id) and scores render with
+AI off (airplane, source=on-device, honest abstain). No fabrication.

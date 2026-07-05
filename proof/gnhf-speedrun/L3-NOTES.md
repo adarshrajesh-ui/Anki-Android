@@ -54,11 +54,41 @@ Plan: `SPEEDRUN-MOBILE-PLAN.md`. Track M1–M5 + mobile UI passes here.
   (12/12) and the full file 20/20 after de-flaking a pre-existing same-ms
   collection-mod sync race. Evidence: proof/gnhf-speedrun/L3/conflict-merge.txt
   + conflict-merge/ (5-shot sequence + cfa_desktop_conflict_review.py).
-- M4 offline-then-sync + AI-off scores — TODO
+- **M4 [P1] offline-then-sync + AI-off scores — DONE.**
+  Device-observable on emulator-5554. Base: phone 31 / server 31 revlog. Airplane
+  mode ON (device `ping 10.0.2.2` unreachable, status-bar airplane icon) → answered
+  card 1783137755189 GOOD offline → phone revlog 31→32, offline id 1783213842513;
+  server still 31, id ABSENT (`found_on_server:false`) = genuine offline-only. STILL
+  OFFLINE, Exam Readiness RENDERED (source=on-device deterministic, no AI/network):
+  honest N/A-abstaining with give-up reasons, 28→29 graded reviews reflecting the
+  offline review — proves AI-off-still-scores. Airplane OFF → Sync icon showed an
+  orange pending-upload dot → tapped Sync → logcat `sending done=true cards=1 notes=0
+  revlog=1` + finalize; icon went clean. Ground truth: server on-disk collection
+  revlog 31→32 and the phone's exact offline id 1783213842513 now present
+  (`found_on_server:true`, re-verified by a fresh full-download). No fabrication.
+  Evidence: `proof/gnhf-speedrun/L3/offline-then-sync.txt` + `offline-then-sync/`
+  (6-shot sequence + `cfa_server_inspect.py`).
 - M5 packaged phone build — TODO
 - Phase B mobile UI passes (≥3) — TODO
 
 ## Key learnings
+- M4 airplane-mode toggle on the emulator: `settings put global airplane_mode_on
+  1` + `su root svc wifi disable`/`svc data disable` + `cmd connectivity
+  airplane-mode enable` + broadcast `AIRPLANE_MODE` reliably makes `10.0.2.2`
+  unreachable (device `ping 10.0.2.2` => "Network is unreachable") and shows the
+  status-bar airplane icon. Reverse all of them to reconnect. Airplane mode kills
+  BOTH the sync server and the AI proxy, so it is a genuine offline+AI-off state.
+- The self-hosted anki-sync-server persists its collection at
+  `/tmp/cfa-syncserver/cfa/collection.anki2` (base `/tmp/cfa-syncserver`). If the
+  server process dies mid-verification, you can STILL prove an upload landed by
+  reading that on-disk file directly with sqlite3 (no re-sync needed); a restart
+  reuses the same on-disk collection, so the uploaded state survives the restart.
+  A download-only inspector (`force_full_download` into a throwaway temp profile)
+  is the clean way to confirm "is revlog id X on the server?" without mutating it.
+- AI-off-still-scores is architecturally free on mobile: CfaScoresProvider (RPC +
+  Kotlin fallback) is 100% local, so airplane mode changes nothing about scoring —
+  the Readiness screen renders (honest abstain) with source=on-device. The only
+  mobile AI is the ethics/Tab-fill proxy, which is irrelevant to the score path.
 - M3 conflict method: put the PHONE in airplane mode, review card X in the
   AnkiDroid reviewer offline, identify card X from the newest phone revlog row,
   then have the desktop review that SAME card id from the server base (later
