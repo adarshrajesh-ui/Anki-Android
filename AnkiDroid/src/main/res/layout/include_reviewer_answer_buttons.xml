@@ -159,9 +159,9 @@
             android:layout_height="?minTouchTargetSize"
             android:orientation="vertical"
             android:focusable="true"
-            android:background="?attr/hardButtonRef"
+            android:background="@drawable/footer_button_showanswer"
             tools:visibility="visible"
-            android:theme="@style/HardButton">
+            android:theme="@style/CfaShowAnswerButton">
 
             <com.ichi2.ui.FixedTextView
                 android:layout_width="wrap_content"

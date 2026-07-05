@@ -98,4 +98,17 @@
         <item name="rippleColor">@color/cfa_accent</item>
     </style>
 
+    <!--
+      CFA reviewer "Show answer" button theme (Phase B Pass-2 mobile Reviewer
+      sweep). The legacy reviewer's flip button reused @style/HardButton, whose
+      answerButtonBackground resolves to the stock blue-grey hardButtonBackground;
+      when card animation is enabled the button is redrawn with footer_button_ripple,
+      which reads answerButtonBackground from the view's own theme overlay. Applying
+      this theme to the flip layout makes BOTH the static and the ripple path render
+      the primary CTA in brand navy, without touching the Hard ease button.
+    -->
+    <style name="CfaShowAnswerButton">
+        <item name="answerButtonBackground">@color/cfa_navy</item>
+    </style>
+
 </resources>

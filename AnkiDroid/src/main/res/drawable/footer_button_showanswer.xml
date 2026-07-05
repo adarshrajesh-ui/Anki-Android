@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+  CFA fork (Phase B Pass-2 mobile Reviewer sweep): the legacy reviewer's
+  "Show answer" flip button reused the Hard ease button's stock blue-grey
+  drawable (footer_button_hard → material_blue_grey_700), so the primary CTA on
+  the highest-time-on-screen surface read as stock AnkiDroid with zero CFA
+  identity. This dedicated drawable gives it the brand navy while leaving the
+  four ease-button semantic colours (again=red / hard=blue-grey / good=green /
+  easy=light-blue) untouched.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/shape_background">
+        <selector>
+            <item android:state_pressed="true">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/cfa_navy_hover" />
+                </shape>
+            </item>
+            <item android:state_focused="true">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/cfa_navy_hover" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/cfa_navy" />
+                </shape>
+            </item>
+        </selector>
+    </item>
+</layer-list>

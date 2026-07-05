@@ -1,0 +1,70 @@
+Phase B Pass 2 (mobile) — Reviewer harsher sweep: "Show answer" CTA stock-blue → CFA navy (M8-1)
+================================================================================================
+
+Surface: the Reviewer — the highest-time-on-screen screen in the app. Pass 1's
+shell refactor branded the toolbar navy, the count-bar cfa_surface, and the ease
+buttons keep their four-grade semantics. The harsher Pass-2 lens found ONE
+residual stock-AnkiDroid colour left on this surface: the primary "Show answer"
+call-to-action.
+
+DEFECT (M8-1, MAJOR)
+--------------------
+The legacy reviewer's "Show answer" flip button (R.id.flashcard_layout_flip in
+include_reviewer_answer_buttons.xml) reused @style/HardButton as its theme and
+?attr/hardButtonRef as its background. Both resolve to the stock blue-grey Hard
+ease-button colour (hardButtonBackground / footer_button_hard =
+@color/material_blue_grey_700). When card animation is enabled the button is
+redrawn via footer_button_ripple, which reads ?attr/answerButtonBackground from
+the view's own theme overlay — so with @style/HardButton it was blue-grey there
+too. Net effect: on the screen users spend the most time on, the single primary
+CTA rendered as a muted stock blue-grey with zero CFA identity, and it also
+happened to look identical to the (unrelated) Hard ease button.
+
+The new reviewer (view_answer_area.xml, behind the new-reviewer preference) had
+the parallel leak: its show_answer_button used
+?showAnswerButtonBackground = @color/material_blue_700 (stock blue).
+
+FIX (presentation-only; ease-button semantics untouched)
+--------------------------------------------------------
+1. New drawable AnkiDroid/src/main/res/drawable/footer_button_showanswer.xml —
+   a dedicated navy button background (default @color/cfa_navy, pressed/focused
+   @color/cfa_navy_hover), mirroring footer_button_hard's structure.
+2. New theme AnkiDroid/src/main/res/values/cfa.xml @style/CfaShowAnswerButton
+   sets answerButtonBackground=@color/cfa_navy, so the animation/ripple path
+   (footer_button_ripple reading answerButtonBackground off the view's theme
+   overlay) ALSO renders navy — not just the static XML background.
+3. include_reviewer_answer_buttons.xml flashcard_layout_flip:
+   android:background ?attr/hardButtonRef → @drawable/footer_button_showanswer;
+   android:theme @style/HardButton → @style/CfaShowAnswerButton.
+4. theme_light.xml showAnswerButtonBackground @color/material_blue_700 →
+   @color/cfa_navy (new-reviewer parity).
+
+The Hard ease button (ease2, R.id.flashcard_layout_ease2) still uses
+?attr/hardButtonRef + @style/HardButton, so the learned four-grade ease scheme
+(again=red / hard=blue-grey / good=green / easy=light-blue) is UNCHANGED.
+
+DEVICE-OBSERVABLE PROOF (emulator-5554, real fullDebug build)
+-------------------------------------------------------------
+before  pass-2-before/07-reviewer-showanswer-bluegrey.png
+        — the current navy shell WITHOUT this fix (installed build predated it);
+          the full-width "Show answer" bar is stock blue-grey.
+after   pass-2/07-reviewer-showanswer-navy.png
+        — after installFullDebug with the fix: the "Show answer" CTA is brand
+          navy (#122B46), matching the toolbar → one cohesive navy product.
+after   pass-2/08-reviewer-ease-buttons-intact.png
+        — the answer side: Again=red, Hard=blue-grey, Good=green, Easy=light-blue
+          all preserved (the fix did NOT bleed into the Hard ease button).
+
+VERIFICATION
+------------
+- ./gradlew :AnkiDroid:installFullDebug          → Installed on 1 device.
+- ./gradlew :AnkiDroid:lintVitalFullRelease      → BUILD SUCCESSFUL
+    (new drawable + style + string all referenced → no UnusedResources;
+     no HardcodedText — text reuses @string/show_answer).
+- ./gradlew :AnkiDroid:ktlintCheck               → BUILD SUCCESSFUL
+- ./gradlew :AnkiDroid:testPlayDebugUnitTest --tests "com.ichi2.anki.cfa.*"
+                                                 → BUILD SUCCESSFUL
+
+Honest scope: no functional/engine change — purely the button's colour. Applies
+in both light and dark theme (the style hardcodes cfa_navy, so the CTA is navy
+regardless of day/night); the shipped default is the light theme.
