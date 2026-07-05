@@ -17,6 +17,7 @@ import org.hamcrest.Matchers.nullValue
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.time.LocalDate
 
 @RunWith(AndroidJUnit4::class)
 class CfaExamConfigTest : RobolectricTest() {
@@ -49,5 +50,32 @@ class CfaExamConfigTest : RobolectricTest() {
         assertThat(cfg.examDate, equalTo("2026-07-24"))
         assertThat(cfg.topicWeights["los::ethics"]!!, closeTo(0.15, 1e-9))
         assertThat(cfg.topicWeights["los::quant"]!!, closeTo(0.10, 1e-9))
+    }
+
+    // --- daysUntil (Phase B Pass-2 M4-2 countdown preview) ---
+
+    @Test
+    fun `daysUntil is null when the date is unset or blank`() {
+        val today = LocalDate.of(2026, 7, 4)
+        assertThat(CfaExamConfig.daysUntil(null, today), nullValue())
+        assertThat(CfaExamConfig.daysUntil("", today), nullValue())
+    }
+
+    @Test
+    fun `daysUntil is null for an unparseable date rather than crashing`() {
+        assertThat(CfaExamConfig.daysUntil("not-a-date", LocalDate.of(2026, 7, 4)), nullValue())
+    }
+
+    @Test
+    fun `daysUntil counts whole days to a future exam`() {
+        // 2026-07-04 -> 2026-08-22 is 49 days.
+        assertThat(CfaExamConfig.daysUntil("2026-08-22", LocalDate.of(2026, 7, 4)), equalTo(49L))
+    }
+
+    @Test
+    fun `daysUntil is zero on exam day and negative once it has passed`() {
+        val examDay = LocalDate.of(2026, 8, 22)
+        assertThat(CfaExamConfig.daysUntil("2026-08-22", examDay), equalTo(0L))
+        assertThat(CfaExamConfig.daysUntil("2026-08-22", examDay.plusDays(3)), equalTo(-3L))
     }
 }

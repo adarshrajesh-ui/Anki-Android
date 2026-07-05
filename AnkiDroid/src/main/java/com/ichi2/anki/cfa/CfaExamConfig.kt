@@ -12,6 +12,8 @@ package com.ichi2.anki.cfa
 
 import com.ichi2.anki.libanki.Collection
 import org.json.JSONObject
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 /** The exam date + per-topic weights persisted in col.conf. */
 data class CfaExamConfigData(
@@ -46,6 +48,22 @@ object CfaExamConfig {
             obj.put("topic_weights", JSONObject())
         }
         col.config.set(EXAM_CONFIG_KEY, obj)
+    }
+
+    /**
+     * Whole days from [today] to the ISO `yyyy-MM-dd` exam [date] (positive =
+     * future, 0 = today, negative = past), or null when [date] is null/absent or
+     * cannot be parsed. Pure so the countdown preview is unit-testable without a
+     * device clock or resources.
+     */
+    fun daysUntil(
+        date: String?,
+        today: LocalDate,
+    ): Long? {
+        val iso = date?.ifEmpty { null } ?: return null
+        return kotlin
+            .runCatching { ChronoUnit.DAYS.between(today, LocalDate.parse(iso)) }
+            .getOrNull()
     }
 
     /** Persist the full config (date + weights), matching set_exam_config. */

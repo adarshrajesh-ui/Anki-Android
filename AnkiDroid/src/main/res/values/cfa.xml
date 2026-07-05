@@ -62,6 +62,16 @@
     <!-- Save button reuses the upstream @string/save to avoid a duplicate string. -->
     <string name="cfa_exam_config_saved">Exam configuration saved</string>
     <string name="cfa_exam_config_no_date">No exam date set</string>
+    <!-- Context line under the title explaining why setting the exam date matters
+         (Phase B Pass-2 M4-2 — the screen was sparse with no rationale). -->
+    <string name="cfa_exam_config_why">Set your exam date so ankiCFA can weight study by points-at-stake and show a live countdown on the Exam Readiness screen.</string>
+    <!-- Live countdown preview shown once a date is picked (M4-2). -->
+    <plurals name="cfa_exam_config_countdown">
+        <item quantity="one">%d day to the exam</item>
+        <item quantity="other">%d days to the exam</item>
+    </plurals>
+    <string name="cfa_exam_config_countdown_today">Your exam is today — good luck.</string>
+    <string name="cfa_exam_config_countdown_past">This exam date has already passed.</string>
 
     <!-- AI Fill (bidirectional tab-fill) — generate the empty side via the AI proxy. -->
     <string name="cfa_ai_fill" maxLength="28">AI Fill (empty side)</string>
