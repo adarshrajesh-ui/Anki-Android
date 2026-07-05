@@ -7,7 +7,7 @@
   (docs/cfa/DESIGN-SYSTEM.md): a structural navy with a warm orange accent.
   Additive only — nothing here overrides upstream resources.
 -->
-<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="DuplicateCrowdInStrings,MissingTranslation,UnusedResources">
 
     <!--
       Brand palette (from the CFA design system single source of truth).
