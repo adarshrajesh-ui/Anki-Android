@@ -54,6 +54,9 @@ object CfaExamQueue {
                     daysToExam = dte,
                     topicWeights = weights,
                     fetchLimit = 0,
+                    // Per-content-type multipliers (desktop A8) — unused on mobile
+                    // today, so pass empty to keep the queue purely weight×weakness.
+                    typeMultipliers = emptyMap(),
                 )
             for (i in 0 until resp.cardIdsCount) {
                 merged.add(resp.getCardIds(i) to resp.getScores(i))

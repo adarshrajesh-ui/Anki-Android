@@ -1,0 +1,77 @@
+M1 — Mobile scores served by the shared Rust `computeCfaScores` RPC (Kotlin fallback)
+=====================================================================================
+Branch: gnhf/speedrun-mobile   Date: 2026-07-05   Engine: ankiCFA fork (main)
+
+GOAL
+----
+Wire CfaScoresProvider.scores() to the shared Rust `compute_cfa_scores` RPC
+(the SAME engine desktop runs), keeping the deterministic on-device CfaScorer as
+a fallback, and expose a `source` flag (rpc | fallback). Verify the RPC is used
+when the engine exposes it, and that its numbers match the Kotlin fallback.
+
+WHAT WAS DONE
+-------------
+1. Rebuilt the fork Android backend so the RPC is compiled in and surfaced as a
+   generated Kotlin binding. Before this pass the fork AAR/testing lib had only
+   `buildExamQueue`; `compute_cfa_scores` (desktop A-item) was never ported.
+     - AAR:      /Users/adarshrajesh/wed/Anki-Android-Backend/rsdroid/build/outputs/aar/rsdroid-release.aar
+                 (built from FORK=~/AlphaWeek2/ankiCFA via cfa_build_fork_engine.sh)
+     - Kotlin binding (GeneratedBackend.kt:1561):
+         open fun computeCfaScores(deckId: Long, wholeCollection: Boolean, now: Long)
+             : anki.scheduler.ComputeCfaScoresResponse
+     - Native symbol count (arm64-v8a librsdroid.so): compute_cfa_scores = 8
+     - Host testing lib (librsdroid.dylib, aarch64-apple-darwin): compute_cfa_scores = 2
+       (packaged into rsdroid-testing.jar so JVM unit tests exercise the real RPC)
+
+2. CfaScoresProvider.scores() now:
+     - prefers col.backend.computeCfaScores(deckId=0, wholeCollection=true, now=0)
+       and maps ComputeCfaScoresResponse -> CfaScores(source = SOURCE_RPC);
+     - transparently falls back to CfaScorer.compute (source = SOURCE_FALLBACK)
+       if the RPC is absent (reflective rpcAvailable check) OR throws at runtime.
+     - logs the chosen provenance: "CFA scores source=rpc (shared Rust engine)".
+
+3. CfaExamQueue.build() updated for the engine's new buildExamQueue signature
+   (added `typeMultipliers` param, desktop A8) — passes emptyMap() (weight×weakness
+   unchanged on mobile).
+
+PARITY FINDING (honest)
+-----------------------
+The parity test initially FAILED: the RPC reported gradedReviews=36 vs the Kotlin
+fallback's 216 on the same seed. Root cause: the shared Rust engine DE-DUPLICATES
+graded reviews per card-day (anti-cramming, rslib/src/scheduler/cfa_scores.rs
+`graded_reviews_by_card`), while the mobile fallback counted every revlog row.
+Fixed the fallback (CfaScorer) to dedupe per card-day with the IDENTICAL day-bucket
+formula, so desktop and phone now agree on the MIN_GRADED_REVIEWS give-up decision.
+After the fix the RPC and fallback agree to 1e-6 on every score point + range.
+
+VERIFY — targeted Cfa unit tests (JVM, real local fork backend), all GREEN
+--------------------------------------------------------------------------
+$ ./gradlew :AnkiDroid:testPlayDebugUnitTest \
+    --tests "com.ichi2.anki.cfa.CfaScoresProviderTest" \
+    --tests "com.ichi2.anki.cfa.CfaScorerTest" \
+    --tests "com.ichi2.anki.cfa.CfaExamQueueTest"
+  BUILD SUCCESSFUL
+
+  CfaScoresProviderTest  tests="3" failures="0" errors="0"
+    - rpc is available on the fork engine
+    - fresh collection abstains on both engines and provider uses rpc   (source=rpc)
+    - rpc scores match the on-device fallback on a populated collection  (parity 1e-6)
+  CfaScorerTest          tests="2" failures="0" errors="0"
+  CfaExamQueueTest       tests="1" failures="0" errors="0"
+
+  Captured runtime log (proof the RPC path executed, not the fallback):
+    I/CfaScoresProvider: CFA scores source=rpc (shared Rust engine)   (x2)
+
+FILES
+-----
+  AnkiDroid/src/main/java/com/ichi2/anki/cfa/CfaScoresProvider.kt   (RPC wiring + fallback + source)
+  AnkiDroid/src/main/java/com/ichi2/anki/cfa/CfaScores.kt           (fallback graded-review day-dedup, parity)
+  AnkiDroid/src/main/java/com/ichi2/anki/cfa/CfaExamQueue.kt        (typeMultipliers arg)
+  AnkiDroid/src/test/java/com/ichi2/anki/cfa/CfaScoresProviderTest.kt  (new, M1 verification)
+  AnkiDroid/src/test/java/com/ichi2/anki/cfa/CfaScorerTest.kt          (seed spread across days)
+
+STATUS: M1 DONE — scores served by the shared Rust computeCfaScores RPC with a
+Kotlin fallback; RPC path proven used (source=rpc) and parity-checked vs fallback.
+Note: uses local_backend=true (../Anki-Android-Backend fork AAR + testing jar).
+Device-observable evidence (emulator logcat source=rpc + Readiness screenshot) is
+a follow-up under Phase B UI capture; the unit test already proves the RPC path.

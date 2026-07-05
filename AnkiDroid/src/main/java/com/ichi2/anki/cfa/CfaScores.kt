@@ -221,11 +221,27 @@ object CfaScorer {
                 }
             }
 
-        // Graded reviews per card (ease > 0 excludes manual reschedules).
+        // Graded reviews per card (ease > 0 excludes manual reschedules),
+        // DE-DUPLICATED per card-day so a same-day cram of one card counts once
+        // toward the give-up threshold. This mirrors the shared Rust engine's
+        // `graded_reviews_by_card` (rslib/src/scheduler/cfa_scores.rs) exactly so
+        // desktop and phone agree on the MIN_GRADED_REVIEWS give-up decision.
+        // DAY_OFFSET (~1e7 days) keeps the day-bucket dividend positive.
+        val dayOffset = 86_400.0 * 10_000_000.0
         val reviewCounts = HashMap<Long, Int>()
         col.db
             .query(
-                "select c.id, count(*) from revlog r join cards c on r.cid = c.id where r.ease > 0 group by c.id",
+                """
+                select cid, count(*) from (
+                  select c.id as cid,
+                    cast((cast(r.id as real)/1000.0 - ? + ?) / 86400.0 as integer) as day
+                  from revlog r join cards c on r.cid = c.id
+                  where r.ease > 0
+                  group by c.id, day
+                ) group by cid
+                """,
+                nextDayAt,
+                dayOffset,
             ).use { cursor ->
                 while (cursor.moveToNext()) {
                     reviewCounts[cursor.getLong(0)] = cursor.getInt(1)

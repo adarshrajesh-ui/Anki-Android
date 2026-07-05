@@ -90,9 +90,11 @@ class CfaScorerTest : RobolectricTest() {
         cardsPerTopic: Int,
         reviewsPerCard: Int,
     ) {
-        val now = System.currentTimeMillis() / 1000
+        val nowMs = System.currentTimeMillis()
+        val dayMs = 86_400_000L
+        val baseDay = (nowMs / dayMs) * dayMs
+        val now = nowMs / 1000
         val lrt = now - 2 * 86_400 // reviewed 2 days ago -> high, valid retrievability
-        var revlogId = 1_600_000_000_000L
         var cardIndex = 0
         for (topic in topics) {
             repeat(cardsPerTopic) { i ->
@@ -108,7 +110,10 @@ class CfaScorerTest : RobolectricTest() {
                 // First exposure (smallest revlog id for the card) drives Performance.
                 val firstEase = if (cardIndex % 5 == 0) 1 else 3
                 repeat(reviewsPerCard) { j ->
-                    revlogId += 1
+                    // Each review on a DISTINCT day so the day-deduped graded-review
+                    // count (matching the shared Rust engine) still crosses the
+                    // threshold; a per-card sub-day offset keeps revlog ids unique.
+                    val revlogId = baseDay - (reviewsPerCard - j) * dayMs + cardIndex * 1000L + j
                     val ease = if (j == 0) firstEase else 3
                     col.db.execute(
                         "insert into revlog(id,cid,usn,ease,ivl,lastIvl,factor,time,type) " +
