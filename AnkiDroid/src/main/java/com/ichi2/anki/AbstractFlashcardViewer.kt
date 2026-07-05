@@ -1446,7 +1446,12 @@ abstract class AbstractFlashcardViewer :
         runBlocking {
             cardMediaPlayer.loadCardAvTags(currentCard!!)
         }
-        cardContent = content.html
+        // CFA: publish the synced AI-grading toggle so the ethics card honours
+        // it (shows the honest "Deterministic" state instead of calling the AI
+        // proxy when grading is off). No-op for non-ethics cards.
+        cardContent =
+            com.ichi2.anki.cfa.CfaCardInject
+                .withAiToggle(getColUnsafe, content.html)
         fillFlashcard()
         playMedia(false) // Play media if appropriate
     }
