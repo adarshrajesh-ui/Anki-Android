@@ -60,6 +60,22 @@ object CfaAiSettings {
     fun masterEnabled(col: Collection): Boolean = col.config.get<Boolean>(MASTER_KEY) ?: true
 
     /**
+     * Persist the small Home AI/no-AI toggle. Turning AI on also turns semantic
+     * ethics grading back on so Home cannot display "AI On" while ethics cards
+     * remain pinned to the deterministic fallback by a stale per-feature switch.
+     */
+    fun setMasterFromHome(
+        col: Collection,
+        on: Boolean,
+    ) {
+        col.config.set(MASTER_KEY, on)
+        if (on) {
+            col.config.set(GRADING_KEY, true)
+            col.config.set(TABFILL_KEY, true)
+        }
+    }
+
+    /**
      * Persist one toggle to `col.conf` (which syncs). Ignores any key that is not
      * one of the three known toggles and returns whether it wrote, so the bridge
      * can refuse arbitrary input. Never touches scheduling or the proxy URL/token.

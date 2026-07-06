@@ -101,6 +101,37 @@ class CfaConceptMapTest {
         assertThat(o.getString("source"), equalTo("rpc"))
     }
 
+    @Test
+    fun payload_carries_per_concept_due_and_new_counts() {
+        val json =
+            CfaConceptMap.buildPayload(
+                listOf(topic("los::ethics", 0.82, 0.125)),
+                "fallback",
+                mapOf(
+                    "ethics" to CfaConceptMap.ConceptCounts(due = 3, new = 5),
+                    "quant" to CfaConceptMap.ConceptCounts(due = 0, new = 2),
+                    "fra" to CfaConceptMap.ConceptCounts(due = 0, new = 0),
+                ),
+            )
+        val counts = JSONObject(json).getJSONObject("counts")
+        assertThat(counts.getJSONObject("ethics").getInt("due"), equalTo(3))
+        assertThat(counts.getJSONObject("ethics").getInt("new"), equalTo(5))
+        assertThat(counts.getJSONObject("quant").getInt("due"), equalTo(0))
+        assertThat(counts.getJSONObject("quant").getInt("new"), equalTo(2))
+        assertThat(counts.getJSONObject("fra").getInt("due"), equalTo(0))
+        assertThat(counts.getJSONObject("fra").getInt("new"), equalTo(0))
+        // Mastery slugs are unaffected by the new counts field.
+        assertThat(JSONObject(json).getJSONObject("slugs").getDouble("ethics"), closeTo(0.82, 1e-9))
+    }
+
+    @Test
+    fun payload_counts_default_to_empty_object() {
+        // The (topics, source) overload must still emit a (empty) counts object,
+        // so the asset's `DATA.counts || {}` guard has a consistent shape.
+        val o = JSONObject(CfaConceptMap.buildPayload(listOf(topic("los::ethics", 0.82, 0.125)), "fallback"))
+        assertThat(o.getJSONObject("counts").length(), equalTo(0))
+    }
+
     /**
      * Regression guard for the panel-gauge abstain-honesty fix (D-P4-1), which
      * matches the desktop CfaConceptMapPage. An abstaining (no-evidence) node
@@ -179,5 +210,29 @@ class CfaConceptMapTest {
         // Honest 3-state provenance replaces the old hard-coded "AI off" text.
         assertThat(html, containsString("AI-generated"))
         assertThat(html, containsString("AI failed"))
+    }
+
+    /**
+     * The detail chip must show the REAL per-concept due count injected as
+     * `DATA.counts` ("<n> cards due", with a secondary " · <n> new" only when
+     * nothing is due) instead of the old placeholder drill wording. Guards that
+     * the counts wiring stays and the placeholder chip text does not creep back.
+     */
+    @Test
+    fun concept_map_asset_renders_real_due_counts() {
+        val candidates =
+            listOf(
+                File("src/main/assets/cfa/concept_map.html"),
+                File("AnkiDroid/src/main/assets/cfa/concept_map.html"),
+            )
+        val asset = candidates.firstOrNull { it.exists() }
+        assertThat("concept_map.html asset must exist for this guard", asset != null, equalTo(true))
+        val html = asset!!.readText()
+        // It reads the injected counts and renders a real "<n> cards due" chip.
+        assertThat(html, containsString("DATA.counts"))
+        assertThat(html, containsString("cards due"))
+        // The old placeholder drill chip wording must be gone.
+        assertThat(html, not(containsString("Study your two dimmest heavy sections first")))
+        assertThat(html, not(containsString("▶ Start a")))
     }
 }

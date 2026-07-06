@@ -38,7 +38,10 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <include
+        android:id="@+id/cfa_bottom_nav"
         layout="@layout/cfa_bottom_shell"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

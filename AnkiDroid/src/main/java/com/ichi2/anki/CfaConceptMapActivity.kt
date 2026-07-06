@@ -23,6 +23,7 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.widget.Toolbar
 import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.cfa.CfaAiClient
@@ -36,6 +37,15 @@ import timber.log.Timber
 
 class CfaConceptMapActivity : AnkiActivity(R.layout.activity_cfa_concept_map) {
     private lateinit var webView: WebView
+
+    /** Skip reloading on the first resume: onCreate already loaded the payload. */
+    private var reloadOnResume = false
+
+    /** How many times the map payload has been (re)loaded. Test seam for the
+     *  reload-on-resume guarantee. */
+    @VisibleForTesting
+    internal var payloadLoadCount = 0
+        private set
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,6 +78,19 @@ class CfaConceptMapActivity : AnkiActivity(R.layout.activity_cfa_concept_map) {
         loadMap()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // A sync or study session finished while this screen was backgrounded can
+        // change per-topic mastery; re-read so the map reflects it on return
+        // without an app restart (parity with CfaExamReadinessActivity). The first
+        // resume is skipped because onCreate already loaded the payload, avoiding a
+        // double-load flash on first open.
+        if (reloadOnResume) {
+            loadMap()
+        }
+        reloadOnResume = true
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
             finish()
@@ -82,16 +105,23 @@ class CfaConceptMapActivity : AnkiActivity(R.layout.activity_cfa_concept_map) {
      * map draws from it on first paint (no flash of the empty/abstain state).
      */
     private fun loadMap() {
+        payloadLoadCount++
         launchCatchingTask {
             val payload =
                 try {
-                    val scores = withCol { CfaScoresProvider.scores(this) }
-                    CfaConceptMap.buildPayload(scores)
+                    // Score + per-concept due/new counts in ONE collection pass so the
+                    // detail chip shows real "<n> cards due" figures, not a placeholder.
+                    withCol {
+                        val scores = CfaScoresProvider.scores(this)
+                        val counts = CfaConceptMap.conceptCounts(this)
+                        CfaConceptMap.buildPayload(scores, counts)
+                    }
                 } catch (e: Exception) {
                     // Honest empty state: an all-gray (abstaining) map still renders.
                     Timber.w(e, "CFA concept-map score load failed; rendering abstain state")
                     JSONObject()
                         .put("slugs", JSONObject())
+                        .put("counts", JSONObject())
                         .put("overall", JSONObject.NULL)
                         .put("source", "unavailable")
                         .toString()

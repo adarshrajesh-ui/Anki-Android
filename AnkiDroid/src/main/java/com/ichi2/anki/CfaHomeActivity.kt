@@ -24,6 +24,7 @@ import android.text.format.DateFormat
 import android.view.MenuItem
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.widget.Toolbar
 import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.account.AccountActivity
@@ -40,6 +41,15 @@ import java.util.Date
 
 class CfaHomeActivity : AnkiActivity(R.layout.activity_cfa_home) {
     private lateinit var webView: WebView
+
+    /** Skip reloading on the first resume: onCreate already loaded the payload. */
+    private var reloadOnResume = false
+
+    /** How many times the Home payload has been (re)loaded. Test seam for the
+     *  reload-on-resume guarantee. */
+    @VisibleForTesting
+    internal var payloadLoadCount = 0
+        private set
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,6 +77,19 @@ class CfaHomeActivity : AnkiActivity(R.layout.activity_cfa_home) {
         loadHome()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // A sync or study session finished while this screen was backgrounded can
+        // change the underlying reviews / exam config; re-read so Home reflects
+        // them on return without an app restart (parity with
+        // CfaExamReadinessActivity). The first resume is skipped because onCreate
+        // already loaded the payload, avoiding a double-load flash on first open.
+        if (reloadOnResume) {
+            loadHome()
+        }
+        reloadOnResume = true
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
             finish()
@@ -81,6 +104,7 @@ class CfaHomeActivity : AnkiActivity(R.layout.activity_cfa_home) {
      * draws from it on first paint (no flash of the empty/abstain state).
      */
     private fun loadHome() {
+        payloadLoadCount++
         launchCatchingTask {
             // The master AI state drives the Home footer AI chip (default ON,
             // AI-first) — read alongside the scores so the chip matches the
@@ -166,6 +190,13 @@ class CfaHomeActivity : AnkiActivity(R.layout.activity_cfa_home) {
                     }
                     else -> Timber.w("CFA home: unknown CTA target %s", target)
                 }
+            }
+        }
+
+        @JavascriptInterface
+        fun setAiMaster(on: Boolean) {
+            activity.launchCatchingTask {
+                withCol { CfaAiSettings.setMasterFromHome(this, on) }
             }
         }
     }

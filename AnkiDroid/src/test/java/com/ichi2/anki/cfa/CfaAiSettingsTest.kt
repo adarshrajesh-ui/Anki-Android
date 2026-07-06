@@ -84,17 +84,17 @@ class CfaAiSettingsTest {
     }
 
     @Test
-    fun home_footer_chip_opens_ai_settings() {
+    fun home_footer_chip_toggles_ai_directly() {
         val html =
             repoFile(
                 "src/main/assets/cfa/home.html",
                 "AnkiDroid/src/main/assets/cfa/home.html",
             )
-        // The AI-state chip reads the synced master state and opens AI Settings,
-        // matching the desktop Home footer "AI On/Off · settings" chip.
+        // The AI-state chip reads and writes the synced master state directly.
         assertThat(html, containsString("ai-chip"))
         assertThat(html, containsString("window.CFA_AI_ENABLED"))
-        assertThat(html, containsString("aiSettings"))
+        assertThat(html, containsString("setAiMaster(aiOn)"))
+        assertThat(html, containsString("No AI"))
     }
 
     @Test
@@ -118,7 +118,8 @@ class CfaAiSettingsTest {
                 "AnkiDroid/src/main/java/com/ichi2/anki/CfaHomeActivity.kt",
             )
         // The bridge launches AI Settings and the master state is injected as a window global.
-        assertThat(activity, containsString("CfaAiSettingsActivity.getIntent"))
+        assertThat(activity, containsString("setAiMaster(on: Boolean)"))
+        assertThat(activity, containsString("CfaAiSettings.setMasterFromHome"))
         assertThat(activity, containsString("window.CFA_AI_ENABLED"))
         assertThat(activity, containsString("buildSyncPayload"))
         assertThat(activity, containsString("DeckPicker.getIntent(this, autoSync = true)"))

@@ -201,6 +201,9 @@ class CfaHomeTest {
         assertThat(html, containsString("Study Ethics — Minimal Pairs"))
         // Honest source provenance chip (shared engine vs on-device).
         assertThat(html, containsString("shared engine"))
+        // Home exposes an immediate AI/no-AI toggle, not only a settings screen.
+        assertThat(html, containsString("setAiMaster(aiOn)"))
+        assertThat(html, containsString("No AI"))
     }
 
     private fun repoFile(vararg candidates: String): String {

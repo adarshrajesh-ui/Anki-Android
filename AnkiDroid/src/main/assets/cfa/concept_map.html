@@ -150,6 +150,9 @@
   // Real per-slug mastery injected by the host Activity (null => abstain/gray).
   var DATA = (typeof window.CFA_MAP_DATA === "object" && window.CFA_MAP_DATA) || {};
   var SLUGS = DATA.slugs || {};
+  // Real per-concept due/new card counts, keyed by the SAME short slug as SLUGS
+  // ({ ethics:{due:3,new:5}, ... }). Empty when the host could not read them.
+  var COUNTS = DATA.counts || {};
   var SOURCE = DATA.source || "fallback";
 
   // The SINGLE batched AI explanation (parity with the desktop pycmd bridge):
@@ -196,7 +199,36 @@
     if (kind==="sub") return "You're at about "+pct+"% on "+full+" (under "+parent+"). This reflects the "+parent+" section estimate — recall there is "+recall+", but it tends to bend under exam-style wording. A few targeted near-miss drills fill it fastest. (Per-subsection tracking arrives as you log more reviews.)";
     return "You're at about "+pct+"% on "+full+". Recall is "+recall+", but "+full+" still slips on reworded vignettes — that's what keeps it from filling. A short set of "+full+" near-miss drills is the quickest way to more gold.";
   }
-  function drillFor(node){ return node.kind==="cfa" ? "▶ Study your two dimmest heavy sections first" : "▶ Start a "+node.full+" near-miss drill"; }
+  // Real per-concept due/new counts (parity with the desktop worker's shared
+  // spec) keyed by short slug. Reserved-word "new" is read via bracket access
+  // and carried internally as `nw`.
+  function countsFor(slug){
+    if (slug && COUNTS.hasOwnProperty(slug)){
+      var c = COUNTS[slug];
+      if (c && typeof c === "object") return { due:(c.due|0), nw:(c["new"]|0) };
+    }
+    return null;
+  }
+  // The centre CFA node rolls up the whole exam: total due/new across concepts.
+  function totalCounts(){
+    var due=0, nw=0, any=false;
+    for (var k in COUNTS){ if(COUNTS.hasOwnProperty(k)){ var c=COUNTS[k];
+      if(c && typeof c==="object"){ any=true; due+=(c.due|0); nw+=(c["new"]|0); } } }
+    return any ? { due:due, nw:nw } : null;
+  }
+  // "<dueCount> cards due" (+ " · <newCount> new" only when 0 due but new exist),
+  // so an all-new concept never reads as a bare "0 due". Matches the shared spec.
+  function dueText(c){
+    var t = c.due + " cards due";
+    if (c.due === 0 && c.nw > 0) t += " · " + c.nw + " new";
+    return t;
+  }
+  // The detail chip: real due count for a concept (topic/subsection) or the
+  // exam-wide total for the centre; null (chip hidden) when counts are absent.
+  function drillFor(node){
+    var c = node.kind==="cfa" ? totalCounts() : countsFor(node.slug);
+    return c ? dueText(c) : null;
+  }
 
   var defs=document.getElementById("defs"), gEdges=document.getElementById("edges"), gNodes=document.getElementById("nodes");
   var tip=document.getElementById("tip"), tipbg=document.getElementById("tipbg"), tipname=document.getElementById("tipname"), tippct=document.getElementById("tippct");
@@ -280,7 +312,11 @@
       gwrap.setAttribute("aria-valuetext",pct+"% mastered");
     }
     var ex=document.getElementById("p-expl"); ex.classList.remove("placeholder"); ex.textContent=explain(node);
-    var dw=document.getElementById("p-drillwrap"); document.getElementById("p-drill").textContent=drillFor(node); dw.style.display="block";
+    // Detail chip shows the REAL per-concept due count ("<n> cards due"); it is
+    // hidden when no count is available (e.g. the host could not read them).
+    var dw=document.getElementById("p-drillwrap"), dtext=drillFor(node);
+    if (dtext){ document.getElementById("p-drill").textContent=dtext; dw.style.display="block"; }
+    else { dw.style.display="none"; }
     renderAiTag();
   }
 
@@ -345,11 +381,13 @@
   });
   TOPICS.forEach(function(tp){
     tp.subs.forEach(function(s){
-      addNode({ id:"sub:"+tp.slug+":"+s[0], x:s._x, y:s._y, r:subR(tp.w), m:tp._m, pct:pctOf(tp._m), name:s[0], full:s[0], kind:"sub", parent:tp.full, band:null, persistentLabel:false, labelAngle:s._a });
+      // Subsections inherit the parent concept's slug so the chip reports the
+      // concept's due count (per-subsection counts are not tracked yet).
+      addNode({ id:"sub:"+tp.slug+":"+s[0], slug:tp.slug, x:s._x, y:s._y, r:subR(tp.w), m:tp._m, pct:pctOf(tp._m), name:s[0], full:s[0], kind:"sub", parent:tp.full, band:null, persistentLabel:false, labelAngle:s._a });
     });
   });
   TOPICS.forEach(function(tp){
-    addNode({ id:"topic:"+tp.slug, x:tp._x, y:tp._y, r:tp._r, m:tp._m, pct:pctOf(tp._m), name:tp.k, full:tp.full, kind:"topic", parent:null, band:tp.band, persistentLabel:true, labelAngle:tp._a });
+    addNode({ id:"topic:"+tp.slug, slug:tp.slug, x:tp._x, y:tp._y, r:tp._r, m:tp._m, pct:pctOf(tp._m), name:tp.k, full:tp.full, kind:"topic", parent:null, band:tp.band, persistentLabel:true, labelAngle:tp._a });
   });
   var cm=overall();
   addNode({ id:"cfa", x:CX, y:CY, r:RC, m:cm, pct:pctOf(cm), name:"CFA", full:"Overall CFA readiness", kind:"cfa", parent:null, band:null, persistentLabel:false, labelAngle:0 });

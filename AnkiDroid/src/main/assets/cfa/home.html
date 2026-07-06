@@ -76,8 +76,7 @@
 
   .foot{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:8px;}
   .chip{display:inline-block; font-size:11px; font-weight:600; color:var(--muted); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:100px; padding:4px 11px;}
-  /* Tappable AI-state chip → opens the AI Settings screen (parity with the
-     desktop CfaHomePage `.cfa-home__chip`). Green border+ink when AI is on. */
+  /* Tappable AI-state chip → immediate AI/no-AI toggle. Green border+ink when AI is on. */
   .chip-btn{font-family:var(--sans); cursor:pointer; background:var(--bg); -webkit-appearance:none;}
   .chip-btn:active{background:var(--surface);}
   .chip-btn.is-on{color:var(--green); border-color:var(--green);}
@@ -205,17 +204,26 @@
     ctasEl.appendChild(b);
   });
 
-  // --- AI-state chip → AI Settings ------------------------------------------
-  // Shows the synced master AI state and opens the native AI Settings screen,
-  // matching the desktop Home footer chip ("AI On/Off · settings").
+  // --- AI-state chip → immediate AI/no-AI toggle -----------------------------
+  // Shows and writes the synced master AI state. Turning on also re-enables
+  // semantic ethics grading on the native side so "AI On" cannot still grade
+  // deterministically because of a hidden stale per-feature switch.
   var aiOn = window.CFA_AI_ENABLED !== false; // default ON (AI-first), like desktop
   var aiChip = document.getElementById("ai-chip");
-  aiChip.textContent = "AI " + (aiOn ? "On" : "Off") + " · settings";
-  aiChip.className = "chip chip-btn" + (aiOn ? " is-on" : "");
+
+  function renderAiChip() {
+    aiChip.textContent = aiOn ? "AI On" : "No AI";
+    aiChip.setAttribute("aria-pressed", aiOn ? "true" : "false");
+    aiChip.className = "chip chip-btn" + (aiOn ? " is-on" : "");
+  }
+
+  renderAiChip();
   aiChip.addEventListener("click", function () {
+    aiOn = !aiOn;
+    renderAiChip();
     try {
-      if (window.AndroidCfaHome && window.AndroidCfaHome.open) {
-        window.AndroidCfaHome.open("aiSettings");
+      if (window.AndroidCfaHome && window.AndroidCfaHome.setAiMaster) {
+        window.AndroidCfaHome.setAiMaster(aiOn);
       }
     } catch (e) { /* bridge absent (e.g. desktop preview) — no-op */ }
   });

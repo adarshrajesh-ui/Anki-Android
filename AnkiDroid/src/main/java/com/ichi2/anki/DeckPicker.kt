@@ -523,9 +523,6 @@ open class DeckPicker :
         // CfaBootstrap.maybeOpenCfaHome.
         maybeOpenCfaHome(savedInstanceState)
 
-        deckPickerBinding.deckPickerContent.visibility = View.GONE
-        deckPickerBinding.noDecksPlaceholder.visibility = View.GONE
-
         // specify a LinearLayoutManager for the RecyclerView
         decksLayoutManager = LinearLayoutManager(this)
         deckPickerBinding.decks.layoutManager = decksLayoutManager
@@ -1912,9 +1909,9 @@ open class DeckPicker :
     override fun sync(conflict: ConflictResolution?) {
         val hkey = Prefs.hkey
         if (hkey.isNullOrEmpty()) {
-            Timber.w("User not logged in")
+            Timber.i("User not logged in; opening sync login")
             pullToSyncWrapper.isRefreshing = false
-            showSyncErrorDialog(SyncErrorDialog.Type.DIALOG_USER_NOT_LOGGED_IN_SYNC)
+            loginToSyncServer()
             return
         }
 
