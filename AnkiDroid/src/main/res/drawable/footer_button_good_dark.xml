@@ -1,20 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- CFA fork: dark-theme "Good" ease fill retoned from stock material_green to the
+     shared CFA pass-green (cfa_ease_good). See values/cfa.xml. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
 <item android:id="@+id/shape_background">
     <selector>
         <item android:state_pressed="true">
             <shape android:shape="rectangle" >
-                <solid android:color="@color/material_green_400" />
+                <solid android:color="@color/cfa_ease_good_hover" />
             </shape>
         </item>
         <item android:state_focused="true">
             <shape android:shape="rectangle" >
-                <solid android:color="@color/material_green_600" />
+                <solid android:color="@color/cfa_ease_good_hover" />
             </shape>
         </item>
         <item>
             <shape android:shape="rectangle" >
-                <solid android:color="@color/material_green_800" />
+                <solid android:color="@color/cfa_ease_good" />
             </shape>
         </item>
     </selector>

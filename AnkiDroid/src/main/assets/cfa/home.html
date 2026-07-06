@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later
+     CFA fork — CFA Home / Today dashboard, the native landing screen the phone
+     opens into (in place of the raw deck list), mirroring the desktop
+     CfaHomePage.svelte. A quiet brand lockup, the exam COUNTDOWN hero + an
+     honest pass/fail one-liner, the three VALUE-FIRST honest scores
+     (Memory / Performance / Readiness, formatted identically to the desktop via
+     CfaHome.kt), and a STUDY grid of CTAs that route to the native CFA screens.
+     The host Activity injects the learner's REAL scores + countdown via
+     `window.CFA_HOME_DATA`; with no data injected an honest abstaining state
+     renders. Study CTAs call the `AndroidCfaHome` @JavascriptInterface bridge to
+     launch the corresponding native activities. Uses the SAME CFA design tokens
+     the Concept Map asset does, so the two surfaces read as one product. -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=4, user-scalable=yes" />
+<title>EthosPrep — Exam Home</title>
+<style>
+  :root{
+    --ink:#F5F2E8; --muted:#A8ACB8; --faint:#737987;
+    --line:rgba(255,255,255,.12); --surface:#07080B; --bg:#10131A;
+    --panel-2:#151925; --navy:#D9AA4F; --accent:#D9AA4F; --accent-soft:rgba(217,170,79,.14); --accent-ink:#F0CF80;
+    --warn:#F0CF80; --warn-soft:rgba(217,170,79,.10); --green:#F0CF80;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; padding:0;}
+  body{font-family:var(--sans); color:var(--ink); background:radial-gradient(circle at 12% -8%,rgba(217,170,79,.18),transparent 34rem),radial-gradient(circle at 100% 0,rgba(122,167,255,.10),transparent 28rem),var(--surface); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;}
+  .wrap{max-width:820px; margin:0 auto; padding:18px 16px 44px;}
+
+  .eyebrow{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--green);}
+  h1{font-size:24px; font-weight:700; line-height:1.12; margin:4px 0 16px; letter-spacing:-.01em;}
+
+  /* Countdown hero — a flat, hairline card with a tone-coloured spine. */
+  .hero{background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02)),var(--bg); border:1px solid var(--line); border-left:4px solid var(--navy); border-radius:16px; padding:16px 18px; margin:0 0 22px; box-shadow:0 16px 40px rgba(0,0,0,.28);}
+  .hero.is-warn{border-left-color:var(--warn); background:var(--warn-soft);}
+  .hero .h-head{font-size:20px; font-weight:600; line-height:1.2;}
+  .hero.is-warn .h-head{color:var(--warn);}
+  .hero .h-sub{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .hero .h-lead{font-size:14px; color:var(--ink); margin-top:10px; line-height:1.55;}
+
+  .block{margin:0 0 24px;}
+  .block-eb{font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 10px;}
+
+  /* Three value-first stat cards, responsive. */
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;}
+  .stat{background:var(--bg); border:1px solid var(--line); border-radius:14px; padding:14px 15px;}
+  .stat .s-val{font-size:22px; font-weight:600; line-height:1.15; letter-spacing:-.01em;}
+  .stat.is-muted .s-val{color:var(--faint); font-size:16px; font-weight:600;}
+  .stat .s-name{display:block; font-size:12.5px; font-weight:600; color:var(--muted); margin-top:8px;}
+  .stat .s-meaning{display:block; font-size:11.5px; line-height:1.35; color:var(--faint); margin-top:2px;}
+  .stat .s-sub{display:block; font-size:11.5px; color:var(--faint); margin-top:8px;}
+  .cap{font-size:11.5px; color:var(--faint); margin:10px 0 0; line-height:1.4;}
+
+  /* Sync/account card. */
+  .sync-card{display:flex; align-items:center; justify-content:space-between; gap:14px; background:var(--bg); border:1px solid var(--line); border-left:4px solid var(--navy); border-radius:16px; padding:15px 16px; margin:0 0 24px; box-shadow:0 14px 34px rgba(0,0,0,.22);}
+  .sync-title{font-size:18px; font-weight:600; line-height:1.2; margin-top:2px;}
+  .sync-meta{display:flex; flex-wrap:wrap; gap:6px; color:var(--muted); font-size:11.5px; line-height:1.35; margin-top:6px;}
+  .sync-meta span:not(:last-child)::after{content:"·"; margin-left:6px; color:var(--faint);}
+  .sync-action{flex:0 0 auto; border:1px solid var(--navy); border-radius:100px; background:var(--navy); color:var(--surface); font-family:var(--sans); font-size:12.5px; font-weight:700; padding:9px 14px; cursor:pointer; -webkit-appearance:none;}
+  .sync-action:active{background:var(--accent-ink);}
+  @media (max-width:420px){.sync-card{align-items:stretch; flex-direction:column;}.sync-action{width:100%;}}
+
+  /* Study CTA grid. */
+  .ctas{display:grid; grid-template-columns:1fr; gap:10px;}
+  .cta{display:block; width:100%; text-align:left; background:var(--bg); border:1px solid var(--line); border-radius:14px; padding:14px 15px; cursor:pointer; font-family:var(--sans); color:var(--ink); -webkit-appearance:none;}
+  .cta:active{background:var(--panel-2);}
+  /* Featured/primary drill — the warm accent-soft tile, matching the desktop
+     CfaHomePage `.cfa-home__cta.is-primary` (one consistent design system). */
+  .cta.is-primary{background:var(--accent-soft); border-color:var(--accent);}
+  .cta.is-primary .c-label{color:var(--ink);}
+  .cta.is-primary .c-sub{color:var(--muted);}
+  .cta .c-label{display:block; font-size:15px; font-weight:600; color:var(--ink);}
+  .cta .c-sub{display:block; font-size:12.5px; color:var(--muted); margin-top:2px;}
+
+  .foot{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:8px;}
+  .chip{display:inline-block; font-size:11px; font-weight:600; color:var(--muted); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:100px; padding:4px 11px;}
+  /* Tappable AI-state chip → immediate AI/no-AI toggle. Green border+ink when AI is on. */
+  .chip-btn{font-family:var(--sans); cursor:pointer; background:var(--bg); -webkit-appearance:none;}
+  .chip-btn:active{background:var(--surface);}
+  .chip-btn.is-on{color:var(--green); border-color:var(--green);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">EthosPrep · Level II</div>
+  <h1>Exam Home</h1>
+
+  <div id="hero" class="hero">
+    <div class="h-head" id="hero-head">—</div>
+    <div class="h-sub" id="hero-sub"></div>
+    <div class="h-lead" id="hero-lead"></div>
+  </div>
+
+  <div class="block">
+    <div class="block-eb">Your honest scores</div>
+    <div class="stats" id="stats"></div>
+    <p class="cap" id="cap"></p>
+  </div>
+
+  <div class="sync-card" aria-label="CFA sync status">
+    <div>
+      <div class="block-eb" id="sync-eyebrow">Settings &amp; sync</div>
+      <div class="sync-title" id="sync-title"></div>
+      <div class="sync-meta">
+        <span id="sync-account"></span>
+        <span id="sync-last"></span>
+        <span id="sync-detail"></span>
+      </div>
+    </div>
+    <button type="button" class="sync-action" id="sync-action"></button>
+  </div>
+
+  <div class="block">
+    <div class="block-eb">Study</div>
+    <div class="ctas" id="ctas"></div>
+  </div>
+
+  <div class="foot">
+    <button type="button" class="chip chip-btn" id="ai-chip"></button>
+    <span class="chip" id="src-chip"></span>
+  </div>
+</div>
+
+<script>
+(function () {
+  var DATA = window.CFA_HOME_DATA || {
+    scores: [], hero: { headline: "Set your exam date", sub: "", lead: "Keep studying to build an honest pass/fail estimate.", tone: "neutral", unset: true },
+    caption: "", source: "fallback",
+    sync: { connected: false, account: "Not connected", status: "Offline until connected", lastSynced: "Never synced", detail: "Use Connect & Sync to link phone and desktop.", actionLabel: "Connect & Sync" }
+  };
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  // --- Hero -----------------------------------------------------------------
+  var hero = DATA.hero || {};
+  var heroEl = document.getElementById("hero");
+  if (hero.tone === "warn") heroEl.className = "hero is-warn";
+  document.getElementById("hero-head").textContent = hero.headline || "";
+  document.getElementById("hero-sub").textContent = hero.sub || "";
+  document.getElementById("hero-lead").textContent = hero.lead || "";
+
+  // --- Scores ---------------------------------------------------------------
+  var statsEl = document.getElementById("stats");
+  (DATA.scores || []).forEach(function (s) {
+    var card = document.createElement("div");
+    card.className = "stat" + (s.tone === "muted" ? " is-muted" : "");
+    card.innerHTML =
+      '<div class="s-val">' + esc(s.value) + "</div>" +
+      '<span class="s-name">' + esc(s.name) + "</span>" +
+      '<span class="s-meaning">' + esc(s.meaning) + "</span>" +
+      '<span class="s-sub">' + esc(s.sub) + "</span>";
+    statsEl.appendChild(card);
+  });
+  document.getElementById("cap").textContent = DATA.caption || "";
+
+  // --- Sync/account status --------------------------------------------------
+  var sync = DATA.sync || {};
+  document.getElementById("sync-title").textContent = sync.status || "Offline until connected";
+  document.getElementById("sync-account").textContent = sync.account || "Not connected";
+  document.getElementById("sync-last").textContent = sync.lastSynced || "Never synced";
+  document.getElementById("sync-detail").textContent = sync.detail || "";
+  var syncBtn = document.getElementById("sync-action");
+  syncBtn.textContent = sync.actionLabel || "Connect & Sync";
+  syncBtn.addEventListener("click", function () {
+    try {
+      if (window.AndroidCfaHome && window.AndroidCfaHome.open) {
+        window.AndroidCfaHome.open("sync");
+      }
+    } catch (e) { /* bridge absent (e.g. desktop preview) — no-op */ }
+  });
+
+  // --- Study CTAs -----------------------------------------------------------
+  // Each routes to a native CFA screen through the AndroidCfaHome bridge, so the
+  // Home is the phone's CFA nav hub (Study / Concept Map / Readiness / Ethics).
+  var CTAS = [
+    { target: "ethics", label: "Study Ethics — Minimal Pairs", sub: "The flagship ethics discrimination drill", primary: true },
+    { target: "priority", label: "Study by Exam Priority", sub: "Weakest, heaviest-weighted cards first" },
+    { target: "readiness", label: "Exam Readiness", sub: "The honest pass / fail report" },
+    { target: "conceptmap", label: "Concept Map", sub: "Your radial mastery map" },
+    { target: "decks", label: "Browse all decks", sub: "The full CFA deck list" }
+  ];
+  var ctasEl = document.getElementById("ctas");
+  CTAS.forEach(function (c) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "cta" + (c.primary ? " is-primary" : "");
+    b.setAttribute("data-target", c.target);
+    b.innerHTML =
+      '<span class="c-label">' + esc(c.label) + "</span>" +
+      '<span class="c-sub">' + esc(c.sub) + "</span>";
+    b.addEventListener("click", function () {
+      try {
+        if (window.AndroidCfaHome && window.AndroidCfaHome.open) {
+          window.AndroidCfaHome.open(c.target);
+        }
+      } catch (e) { /* bridge absent (e.g. desktop preview) — no-op */ }
+    });
+    ctasEl.appendChild(b);
+  });
+
+  // --- AI-state chip → immediate AI/no-AI toggle -----------------------------
+  // Shows and writes the synced master AI state. Turning on also re-enables
+  // semantic ethics grading on the native side so "AI On" cannot still grade
+  // deterministically because of a hidden stale per-feature switch.
+  var aiOn = window.CFA_AI_ENABLED !== false; // default ON (AI-first), like desktop
+  var aiChip = document.getElementById("ai-chip");
+
+  function renderAiChip() {
+    aiChip.textContent = aiOn ? "AI On" : "No AI";
+    aiChip.setAttribute("aria-pressed", aiOn ? "true" : "false");
+    aiChip.className = "chip chip-btn" + (aiOn ? " is-on" : "");
+  }
+
+  renderAiChip();
+  aiChip.addEventListener("click", function () {
+    aiOn = !aiOn;
+    renderAiChip();
+    try {
+      if (window.AndroidCfaHome && window.AndroidCfaHome.setAiMaster) {
+        window.AndroidCfaHome.setAiMaster(aiOn);
+      }
+    } catch (e) { /* bridge absent (e.g. desktop preview) — no-op */ }
+  });
+
+  // --- Source provenance chip ----------------------------------------------
+  document.getElementById("src-chip").textContent =
+    DATA.source === "rpc" ? "Source: shared engine" : "Source: on-device (deterministic)";
+})();
+</script>
+</body>
+</html>

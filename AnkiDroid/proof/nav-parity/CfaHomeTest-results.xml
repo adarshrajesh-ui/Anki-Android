@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.ichi2.anki.cfa.CfaHomeTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-07-05T14:18:10.700Z" hostname="Mac.lan" time="9.28">
+  <properties/>
+  <testcase name="hero_lead_reports_pass_probability_when_calibrated" classname="com.ichi2.anki.cfa.CfaHomeTest" time="8.111"/>
+  <testcase name="hero_lead_states_reason_while_readiness_abstains" classname="com.ichi2.anki.cfa.CfaHomeTest" time="0.085"/>
+  <testcase name="countdown_is_a_calm_prompt_when_unset" classname="com.ichi2.anki.cfa.CfaHomeTest" time="0.071"/>
+  <testcase name="countdown_turns_warn_inside_two_weeks" classname="com.ichi2.anki.cfa.CfaHomeTest" time="0.068"/>
+  <testcase name="opens_home_only_on_a_fresh_cold_launcher_start" classname="com.ichi2.anki.cfa.CfaHomeTest" time="0.057"/>
+  <testcase name="nav_drawer_exposes_all_five_cfa_sections" classname="com.ichi2.anki.cfa.CfaHomeTest" time="0.052"/>
+  <testcase name="measured_score_shows_range_and_midpoint" classname="com.ichi2.anki.cfa.CfaHomeTest" time="0.068"/>
+  <testcase name="payload_carries_three_scores_and_source" classname="com.ichi2.anki.cfa.CfaHomeTest" time="0.052"/>
+  <testcase name="abstaining_score_is_quiet_and_honest" classname="com.ichi2.anki.cfa.CfaHomeTest" time="0.065"/>
+  <testcase name="nav_drawer_handler_launches_study_and_ethics_natively" classname="com.ichi2.anki.cfa.CfaHomeTest" time="0.069"/>
+  <testcase name="home_asset_wires_the_bridge_and_ctas" classname="com.ichi2.anki.cfa.CfaHomeTest" time="0.069"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[SLF4J(W): No SLF4J providers were found.
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+SLF4J(W): Class path contains SLF4J bindings targeting slf4j-api versions 1.7.x or earlier.
+SLF4J(W): Ignoring binding found at [jar:file:/Users/adarshrajesh/.gradle/caches/9.5.0/transforms/9ffaca1f9baff49166d291b431496c48/transformed/slf4j-timber-3.1-runtime.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J(W): Ignoring binding found at [jar:file:/Users/adarshrajesh/.gradle/caches/9.5.0/transforms/e4e6cba1a4e2d7c5b3e85c6731c0db96/transformed/slf4j-timber-3.1/jars/classes.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J(W): See https://www.slf4j.org/codes.html#ignoredBindings for an explanation.
+]]></system-err>
+</testsuite>

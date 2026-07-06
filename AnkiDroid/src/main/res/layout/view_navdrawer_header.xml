@@ -1,10 +1,36 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  CFA fork (Phase B Pass-2 shell refactor): the nav-drawer header was the stock
+  AnkiDroid blue-mountain illustration with no CFA identity. Replaced with a navy
+  CFA brand lockup (wordmark + tagline + accent rule) so the drawer reads as a
+  native CFA product. Uses the shared CFA tokens; no new image asset.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="150dp"
-    android:orientation="vertical">
-    <ImageView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="?attr/navDrawerImage"
-        android:scaleType="centerCrop" />
-</FrameLayout>
+    android:background="@color/cfa_night_bg"
+    android:orientation="vertical"
+    android:gravity="bottom"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="18dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/cfa_brand_wordmark"
+        android:textColor="@color/cfa_night_ink"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.01" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:text="@string/cfa_brand_tagline"
+        android:textColor="@color/cfa_gold_light"
+        android:textSize="12sp"
+        android:letterSpacing="0.08"
+        android:textAllCaps="true" />
+</LinearLayout>

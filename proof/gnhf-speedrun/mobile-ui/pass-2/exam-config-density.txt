@@ -1,0 +1,69 @@
+Phase B — Pass 2 (mobile, harsher) — M4-2: Exam Config sparse / no rationale
+============================================================================
+
+Screen: Exam configuration (CfaExamConfigActivity)
+Device: emulator-5554 (real running fullDebug build), adb screencap.
+
+DEFECT (Pass-1 carried MINOR M4-2)
+----------------------------------
+The Exam configuration screen was a bare title + date field + Pick date + Save,
+with a large empty lower half and NO explanation of why setting an exam date
+matters, and NO feedback once a date was chosen. On a premium paid exam-prep
+product a config screen that just says "No exam date set" over a wall of empty
+space reads as unfinished — the user has no reason to engage and no confirmation
+of what they picked.
+
+FIX (this pass)
+---------------
+Presentation-only (no change to the persisted `cfa_exam_config` col.conf shape,
+which stays byte-identical to the desktop reference so the synced key still
+drives both apps):
+
+1. Context line under the title (cfa_exam_config_why):
+   "Set your exam date so ankiCFA can weight study by points-at-stake and show a
+    live countdown on the Exam Readiness screen."
+   Renders in calm cfa_muted grey — tells the user why the field matters.
+
+2. Live countdown preview under the date field (cfa_config_countdown), shown the
+   moment a date is set and on re-open:
+     future  -> "N days to the exam"   (plurals: 1 day / N days)
+     today   -> "Your exam is today — good luck."
+     past    -> "This exam date has already passed."
+   Rendered in the warm cfa_accent (the single warm accent on CFA screens),
+   hidden entirely when no date is set (visibility=gone).
+
+   Backed by a pure, testable helper CfaExamConfig.daysUntil(date, today) that
+   returns whole days (positive future / 0 today / negative past) or null when
+   the date is unset/blank/unparseable — no device clock or resources needed to
+   unit-test the count.
+
+DEVICE-OBSERVABLE BEFORE / AFTER
+--------------------------------
+- pass-2-before/05-exam-config-sparse.png
+    The genuine pre-fix screen on the CURRENT navy shell (captured by
+    git-stashing the M4-2 source, rebuilding installFullDebug, and screencapping
+    — so the before/after differ ONLY by this fix, not by the shell refactor):
+    "No exam date set" + Pick date + Save, then ~60% empty screen, no rationale.
+- pass-2/05-exam-config-context.png
+    After: the "why it matters" context line now sits under "Exam date" (no date
+    set state — countdown correctly hidden).
+- pass-2/06-exam-config-countdown.png
+    After: with a date picked (2026-08-29) the live "55 days to the exam"
+    countdown renders in warm accent under the date field. (55 is consistent with
+    the emulator's UTC "now" of 2026-07-05; the count is a real relative delta,
+    not a fixed string.)
+
+VERIFICATION (all green)
+------------------------
+- ./gradlew :AnkiDroid:testPlayDebugUnitTest --tests
+    "com.ichi2.anki.cfa.CfaExamConfigTest"   BUILD SUCCESSFUL
+    (7 tests: 3 prior persistence + 4 new daysUntil: null on unset/blank,
+     null on unparseable, 49 days to a future exam, 0 on exam day / -3 past)
+- ./gradlew :AnkiDroid:ktlintCheck :AnkiDroid:lintVitalFullRelease
+    BUILD SUCCESSFUL (new strings + plurals all referenced -> no UnusedResources;
+    plurals carry both one/other quantity forms)
+- ./gradlew :AnkiDroid:installFullDebug   BUILD SUCCESSFUL (device capture above)
+
+Honest scope: this is a presentation/UX polish (M4-2, a Pass-1 MINOR promoted in
+the harsher Pass-2 sweep of the remaining screens). The exam-date persistence and
+the shared synced key are untouched.

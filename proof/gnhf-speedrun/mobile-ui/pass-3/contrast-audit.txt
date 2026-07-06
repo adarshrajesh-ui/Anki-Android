@@ -1,0 +1,77 @@
+ankiCFA MOBILE — Phase B Pass 3 (ruthless) WCAG AA contrast audit
+==================================================================
+Branch: gnhf/speedrun-mobile   Device: emulator-5554 (Android 14)
+
+FINDING (M-P3-1, MAJOR accessibility)
+-------------------------------------
+The ruthless pass opened with a *measured* WCAG 2.1 contrast audit of the CFA
+Android colour tokens (ratios computed from the compiled resource values, not a
+by-eye critique) — the mobile analog of the desktop Pass-3 audit (iter 43).
+
+The warm brand accent cfa_accent (#DA5C01) was colouring small readable TEXT in
+three places, yet only reaches ~3.8:1 — below WCAG AA's 4.5:1 bar for normal
+text (it does not even clear the 3:1 large-text floor comfortably):
+
+  usage                                 colour     bg       ratio   verdict
+  Readiness eyebrow (11sp)              #DA5C01    white    3.81:1  FAIL AA
+  Config eyebrow (11sp)                 #DA5C01    white    3.81:1  FAIL AA
+  Config exam countdown (13sp)          #DA5C01    white    3.81:1  FAIL AA
+  Nav-drawer tagline (12sp)             #DA5C01    navy     3.78:1  FAIL AA
+
+The desktop design system already avoids this exact trap — it uses a separate
+AA-safe eyebrow colour rather than the orange accent for small text
+(ts/lib/cfa/Eyebrow.svelte uses $cfa-mm-green #007e56, 5.1:1). Mobile had copied
+the accent onto text directly and never caught it.
+
+FIX (parity-safe; mirrors the desktop iter-26/43 "add a new token" pattern)
+---------------------------------------------------------------------------
+Two AA-safe accent-TEXT tokens added to res/values/cfa.xml; cfa_accent's VALUE
+is unchanged (it stays correct for the FAB tint / outlined-button ripple /
+progress indicator — none of which are small text):
+
+  cfa_accent_ink     #A84500   accent text on LIGHT backgrounds
+                               (white 5.97:1 / cfa_surface 5.50:1)  PASS AA
+  cfa_accent_on_navy #F0894A   accent text on the NAVY drawer header
+                               (navy 5.74:1)                        PASS AA
+
+Note: darkening (like accent_ink) REDUCES contrast on the dark navy drawer, so
+navy needs a *brighter* warm tint — hence two tokens, not one. Both keep the
+warm-orange identity (R-channel dominates B by >=60).
+
+Repointed 3 usages (4 TextViews):
+  layout/activity_cfa_exam_readiness.xml  eyebrow      cfa_accent -> cfa_accent_ink
+  layout/activity_cfa_exam_config.xml     eyebrow      cfa_accent -> cfa_accent_ink
+  layout/activity_cfa_exam_config.xml     countdown    cfa_accent -> cfa_accent_ink
+  layout/view_navdrawer_header.xml        tagline      cfa_accent -> cfa_accent_on_navy
+
+GUARD (drift-proof, mirrors desktop contrast.test.ts)
+-----------------------------------------------------
+AnkiDroid/src/test/java/com/ichi2/anki/cfa/CfaContrastTest.kt (10 tests, green):
+computes WCAG contrast from the real compiled R.color values and asserts:
+  - cfa_muted / cfa_ink / cfa_navy clear AA on white / surface / navy
+  - cfa_accent FAILS AA on white AND navy (pins the finding so the token can't
+    be "fixed" by quietly brightening the FAB accent)
+  - cfa_accent_ink and cfa_accent_on_navy clear AA on their backgrounds
+  - the fix stayed warm-orange (R>B by >=60), not a grey collapse
+  - a regression guard that parses the three layout XMLs and fails if any CFA
+    TextView binds the raw cfa_accent as textColor again
+
+EVIDENCE
+--------
+Device-observable before/after on emulator-5554 (stash-isolated: only these 4
+source files were stashed for the before-capture, so the pair differs solely by
+this fix):
+  pass-3-before/01-navdrawer-tagline-before.png  (tagline #DA5C01)
+  pass-3/01-navdrawer-tagline-after.png          (tagline #F0894A, brighter/AA)
+  pass-3-before/02-readiness-eyebrow-before.png  (eyebrow #DA5C01)
+  pass-3/02-readiness-eyebrow-after.png          (eyebrow #A84500, deeper/AA)
+  pass-3-before/03-config-eyebrow-countdown-before.png  (eyebrow+countdown #DA5C01)
+  pass-3/03-config-eyebrow-countdown-after.png          (eyebrow+countdown #A84500)
+  pass-3/04-contrast-audit-proof.png             (FAIL->PASS ratio swatch table)
+
+GATES (all green)
+-----------------
+  ./gradlew :AnkiDroid:testPlayDebugUnitTest --tests "com.ichi2.anki.cfa.CfaContrastTest"   -> 10 pass
+  ./gradlew :AnkiDroid:testPlayDebugUnitTest --tests "com.ichi2.anki.cfa.*" --tests "com.ichi2.anki.Cfa*" -> pass
+  ./gradlew :AnkiDroid:lintVitalFullRelease ktlintCheck -> BUILD SUCCESSFUL
+  ./gradlew :AnkiDroid:installFullDebug -> BUILD SUCCESSFUL (device-observed)

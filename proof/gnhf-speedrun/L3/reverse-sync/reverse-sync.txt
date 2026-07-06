@@ -1,0 +1,86 @@
+M2 — Device-observable desktop→phone reverse sync (PROVEN, not BLOCKED)
+========================================================================
+Date: 2026-07-04
+Device: emulator-5554 (AVD ankidroid_cfa), app com.ichi2.anki.debug
+Sync server: local anki-sync-server at http://10.0.2.2:27701/ (user cfa)
+Branch: gnhf/speedrun-mobile
+
+GOAL (SPEEDRUN-MOBILE-PLAN.md M2): a card reviewed on DESKTOP shows on the
+emulator after sync + cold launch; revlog counts match. Root-cause the
+"on-device collection diverges/resets across cold launch" concern from
+proof/friday/sync/HANDOFF.md.
+
+--------------------------------------------------------------------------
+RESULT: reverse sync is device-observable and PERSISTS across cold launch.
+The HANDOFF "divergence/reset" does NOT reproduce on this branch.
+--------------------------------------------------------------------------
+
+METHOD (causal, two rounds)
+Each round makes ONE real graded review on the DESKTOP side against the SAME
+server, uploads it, then syncs the phone and cold-relaunches. The desktop
+generates a unique revlog id per review; finding that exact id in the phone's
+on-disk collection is airtight causal proof it arrived via sync (the phone
+could not invent that id).
+Desktop reviewer: cfa_desktop_review.py (in this dir) — opens a fresh temp
+desktop profile, full-downloads the server collection, answers a specific CFA
+card "Good" through the real v3 scheduler, uploads via anki.cfa_sync.sync().
+
+ROUND 1
+  DESKTOP_REVIEW_MARKER {"card_id": 1783137755170, "reps_before": 2,
+    "reps_after": 3, "revlog_before_dl": 24, "revlog_after_review": 26,
+    "revlog_after_sync": 26, "last_revlog_id_for_card": 1783211725074,
+    "sync_result": 0}
+  Server after upload: revlog 24 -> 26, card 1783137755170 reps = 3,
+    last revlog (id 1783211725074, ease 3, type 1 = review).
+  Phone (auto-sync on foreground) then FORCE-STOPPED (cold):
+    on-disk collection.anki2 -> revlog 26, card 1783137755170 reps = 3,
+    revlog id 1783211725074 present, WAL checkpointed to 0 bytes.
+  Phone UI (cold relaunch): Exam Readiness shows "25 graded reviews"
+    (26 revlog - 1 type-4 manual reschedule = 25 graded), honestly ABSTAINING
+    ("N/A — abstaining", need 200) — the give-up rule, not fabricated scores.
+
+ROUND 2
+  ROUND2_MARKER {"card_id": 1783137755171, "reps_before": 2, "reps_after": 3,
+    "revlog_before": 26, "revlog_after": 28, "last_revlog_id": 1783211928235,
+    "sync_result": 0}
+  Server after upload: revlog 26 -> 28, card 1783137755171 reps = 3.
+  Phone (explicit toolbar Sync, logcat: "anki::sync::collection::normal:
+    finalize" + media sync SUCCESS) then FORCE-STOPPED (cold):
+    on-disk collection (WAL applied) -> revlog 28,
+    card 1783137755170 reps = 3, card 1783137755171 reps = 3,
+    BOTH desktop revlog ids present (1783211725074 AND 1783211928235).
+  Phone UI: Exam Readiness now shows "26 graded reviews".
+
+DEVICE-OBSERVABLE DELTA (the headline)
+  desktop review #1 -> phone shows 25 graded reviews
+  desktop review #2 -> phone shows 26 graded reviews
+  i.e. each desktop "Good" review increments the phone's device-displayed
+  graded-review count by exactly 1 after sync + cold relaunch.
+
+SCREENSHOT SEQUENCE (NO VIDEO)
+  01-phone-deckpicker-synced.png                        DeckPicker with the
+      synced CFA decks (CFA / Ethics Pairs / CFA Level II) + "Studied N today".
+  02-phone-readiness-25graded-after-desktop-review-1.png  "25 graded reviews".
+  03-phone-readiness-26graded-after-desktop-review-2.png  "26 graded reviews".
+
+ROOT CAUSE OF THE HANDOFF "DIVERGENCE" (honest finding)
+The HANDOFF observed the on-disk collection.anki2 showing only ~3 revlog rows
+"that does not reflect the synced state". That was a MEASUREMENT ARTIFACT, not
+a data-loss/reset bug: reading collection.anki2 while the app is LIVE (or via
+`adb pull` of the main file + a separately-pulled -wal from a running process)
+shows only the checkpointed pages — the synced reviews are durably held in the
+un-checkpointed WAL. After a clean cold-stop the WAL either checkpoints into the
+main file (round 1: main file = 26 revlog, WAL 0 bytes) or remains a consistent
+WAL that SQLite applies on next open (round 2: 28 revlog). Either way the synced
+state PERSISTS and the phone UI reflects it. No divergence, no reset, no
+corruption. The IntentHandler "routes to Cfa* instead of DeckPicker" concern is
+also stale: this branch's IntentHandler has no CFA routing; launch goes straight
+to DeckPicker.
+
+CORROBORATION (engine-level, machine-checked)
+Desktop repo: PYTHONPATH="out/pylib:pylib" pytest pylib/tests/test_cfa_sync.py
+  -> 7 passed (forward sync, reverse sync, same-card conflict merge, conflict
+  rule units) against a real anki-sync-server + real Rust sync engine.
+
+VERDICT: M2 DONE — device-observable reverse sync captured + machine-verified
+on-disk persistence; no engine change needed (the reported bug was an artifact).

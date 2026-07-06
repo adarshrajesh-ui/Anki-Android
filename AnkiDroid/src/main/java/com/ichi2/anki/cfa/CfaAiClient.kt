@@ -12,6 +12,7 @@
 package com.ichi2.anki.cfa
 
 import com.ichi2.anki.libanki.Collection
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.net.HttpURLConnection
@@ -25,6 +26,60 @@ data class CfaAiResult(
     val ok: Boolean,
     val text: String,
     val target: String?,
+    val source: String,
+    val model: String?,
+    val error: String?,
+)
+
+/** Per-gold-span verdict inside a semantic ethics grade. */
+data class CfaGradeSpan(
+    val phrase: String,
+    val matched: Boolean,
+    val note: String,
+)
+
+/**
+ * One semantic ethics-grade result from the proxy (`POST /cfa/grade`). Mirrors
+ * the desktop `cfa/ethics_pairs/ai_grading.grade_semantic` contract exactly so
+ * the phone renders the SAME partial-credit tiers, cited Standard, and personal
+ * coaching. [source] is "ai" on a real semantic grade, "fallback" whenever the
+ * proxy degraded (AI off, no key, network/parse error) — the card template's own
+ * deterministic grade stays authoritative in that case.
+ *
+ * [grade] is one of "correct" | "somewhat" | "partial" | "wrong". [standard] is
+ * the governing CFA Standard code+name the grader cites (echoed even on
+ * fallback). [confidence] is null when the model did not report one.
+ */
+data class CfaGradeResult(
+    val ok: Boolean,
+    val source: String,
+    val grade: String,
+    val verdictCorrect: Boolean,
+    val correct: Boolean,
+    val explanation: String,
+    val coaching: String,
+    val studyTip: String,
+    val confidence: Double?,
+    val standard: String,
+    val itemId: String,
+    val perSpan: List<CfaGradeSpan>,
+    val model: String?,
+    val error: String?,
+)
+
+/**
+ * The Concept Map's SINGLE batched explanation result (`POST /cfa/mapexplain`).
+ * Mirrors the desktop `cfa/ai/mapexplain.explain_map` + pycmd bridge contract:
+ * ONE call for the whole map returns an id -> plain-English "why" map. [source]
+ * is "ai" on success, "fallback" whenever AI is off / no key / any failure — in
+ * which case [explanations] is empty and the map JS keeps its deterministic
+ * templated wording per node. [aiOn] is false only when the synced master AI
+ * toggle is off (so the phone can say "AI off" vs "AI failed").
+ */
+data class CfaMapExplainResult(
+    val ok: Boolean,
+    val aiOn: Boolean,
+    val explanations: Map<String, String>,
     val source: String,
     val model: String?,
     val error: String?,
@@ -44,6 +99,17 @@ object CfaAiClient {
     const val URL_KEY = "cfa_ai_proxy_url"
     const val TOKEN_KEY = "cfa_ai_proxy_token"
 
+    // AI-toggle contract — SHARED with the desktop `qt/aqt/cfa_ai_settings.py`
+    // and stored in col.conf, so it SYNCS: turning AI off on the desktop is
+    // honoured on the phone (and vice-versa). A feature's AI path runs only when
+    // the master switch AND that feature's switch are on; both DEFAULT ON
+    // (AI-first) to match the desktop `get_ai_toggles`. When off, the phone must
+    // NOT call the proxy — it degrades to its deterministic fallback exactly as
+    // the desktop does, and honestly reports `error == "ai_off"`.
+    const val MASTER_KEY = "cfa_ai_enabled"
+    const val TABFILL_KEY = "cfa_ai_tabfill_enabled"
+    const val GRADING_KEY = "cfa_ai_grading_enabled"
+
     // Emulator -> host machine. Override via the synced col.conf keys above so a
     // real device can point at the LAN address of the machine running the proxy.
     const val DEFAULT_URL = "http://10.0.2.2:27702"
@@ -54,16 +120,173 @@ object CfaAiClient {
     fun proxyToken(col: Collection): String = (col.config.get<String>(TOKEN_KEY) ?: "").ifBlank { DEFAULT_TOKEN }
 
     /**
+     * Pure toggle rule (desktop `ai_active`): AI runs for a feature only when the
+     * [master] switch AND the [feature] switch are on. Both DEFAULT ON when unset
+     * (null), matching the desktop AI-first defaults.
+     */
+    fun aiEnabled(
+        master: Boolean?,
+        feature: Boolean?,
+    ): Boolean = (master ?: true) && (feature ?: true)
+
+    /** Whether AI for [featureKey] (TABFILL_KEY / GRADING_KEY) is enabled by the SYNCED toggles. */
+    fun aiEnabled(
+        col: Collection,
+        featureKey: String,
+    ): Boolean = aiEnabled(col.config.get<Boolean>(MASTER_KEY), col.config.get<Boolean>(featureKey))
+
+    /** The honest AI-off tab-fill result — no network call, deterministic fallback (desktop error "ai_off"). */
+    fun aiOffFill(): CfaAiResult = CfaAiResult(false, "", null, "fallback", null, "ai_off")
+
+    /**
+     * Whether the Concept Map's batched AI explanation is enabled by the SYNCED
+     * toggles. Gated on the MASTER switch only (default ON) — matching the desktop
+     * `cfa_concept_map_ai._map_ai_enabled`: the explanation is a read-only
+     * narration layered on the same scores, so it honours the one switch the user
+     * flips to go fully offline rather than adding a third control.
+     */
+    fun mapExplainEnabled(col: Collection): Boolean = col.config.get<Boolean>(MASTER_KEY) ?: true
+
+    /** The honest AI-off Concept-Map explanation result — no network, keep templated wording. */
+    fun aiOffMapExplain(): CfaMapExplainResult =
+        CfaMapExplainResult(false, aiOn = false, explanations = emptyMap(), source = "fallback", model = null, error = "ai_off")
+
+    /**
+     * Concept Map — the SINGLE batched explanation via the proxy configured in
+     * [col]. [nodesJson] is the JSON array of `{id, full, kind, pct, band, parent}`
+     * the map JS built (matching the desktop node ids). Skips the network entirely
+     * when the synced master AI toggle is off (returns the honest "ai_off"
+     * fallback so the map keeps its templated wording). Never throws.
+     */
+    fun explainMap(
+        col: Collection,
+        nodesJson: String,
+        poster: CfaHttpPost = DEFAULT_POST,
+    ): CfaMapExplainResult =
+        if (!mapExplainEnabled(col)) {
+            aiOffMapExplain()
+        } else {
+            explainMap(proxyUrl(col), proxyToken(col), nodesJson, poster)
+        }
+
+    /** Pure overload: POST {nodes} to `/cfa/mapexplain` at [baseUrl]; parse the id->text map. */
+    fun explainMap(
+        baseUrl: String,
+        token: String,
+        nodesJson: String,
+        poster: CfaHttpPost,
+    ): CfaMapExplainResult {
+        val nodes =
+            try {
+                JSONArray(nodesJson)
+            } catch (e: Exception) {
+                return CfaMapExplainResult(
+                    false,
+                    aiOn = true,
+                    explanations = emptyMap(),
+                    source = "fallback",
+                    model = null,
+                    error = "bad_nodes",
+                )
+            }
+        if (nodes.length() == 0) {
+            return CfaMapExplainResult(false, aiOn = true, explanations = emptyMap(), source = "fallback", model = null, error = "no_nodes")
+        }
+        val body = JSONObject().put("nodes", nodes).toString()
+        return try {
+            val (status, resp) = poster.post("${baseUrl.trimEnd('/')}/cfa/mapexplain", token, body)
+            if (status != 200) {
+                return CfaMapExplainResult(
+                    false,
+                    aiOn = true,
+                    explanations = emptyMap(),
+                    source = "fallback",
+                    model = null,
+                    error = "http_$status",
+                )
+            }
+            val o = JSONObject(resp)
+            val map = mutableMapOf<String, String>()
+            val expl = o.optJSONObject("explanations")
+            if (expl != null) {
+                val it = expl.keys()
+                while (it.hasNext()) {
+                    val k = it.next()
+                    val v = expl.optString(k, "")
+                    if (v.isNotBlank()) map[k] = v
+                }
+            }
+            CfaMapExplainResult(
+                ok = o.optBoolean("ok", false),
+                aiOn = true,
+                explanations = map,
+                source = o.optString("source", "fallback"),
+                model = o.optString("model", "").ifBlank { null },
+                error = o.optString("error", "").ifBlank { null },
+            )
+        } catch (e: Exception) {
+            CfaMapExplainResult(
+                false,
+                aiOn = true,
+                explanations = emptyMap(),
+                source = "fallback",
+                model = null,
+                error = "client_error:${e.javaClass.simpleName}",
+            )
+        }
+    }
+
+    /**
      * Bidirectional tab-fill via the proxy configured in [col]: send both sides,
      * the server generates whichever is empty (front->back or back->front).
-     * Never throws.
+     * Skips the network entirely when the synced AI toggle is off (returns the
+     * honest "ai_off" fallback). Never throws.
      */
     fun fill(
         col: Collection,
         front: String,
         back: String,
         poster: CfaHttpPost = DEFAULT_POST,
-    ): CfaAiResult = fill(proxyUrl(col), proxyToken(col), front, back, poster)
+    ): CfaAiResult =
+        if (!aiEnabled(col, TABFILL_KEY)) {
+            aiOffFill()
+        } else {
+            fill(proxyUrl(col), proxyToken(col), front, back, poster)
+        }
+
+    /** The phone editor's visible button is back-only: front text in, empty back out. */
+    fun fillBack(
+        col: Collection,
+        front: String,
+        poster: CfaHttpPost = DEFAULT_POST,
+    ): CfaAiResult =
+        if (!aiEnabled(col, TABFILL_KEY)) {
+            aiOffFill()
+        } else {
+            fillBack(proxyUrl(col), proxyToken(col), front, poster)
+        }
+
+    /**
+     * Pure back-only overload for the phone button. It still uses `/cfa/tabfill`
+     * so the generated answer comes through the desktop AI proxy, but it never
+     * asks the server to generate a front.
+     */
+    fun fillBack(
+        baseUrl: String,
+        token: String,
+        front: String,
+        poster: CfaHttpPost,
+    ): CfaAiResult {
+        if (front.isBlank()) {
+            return CfaAiResult(false, "", "back", "fallback", null, "empty_front")
+        }
+        val result = fill(baseUrl, token, front, "", poster)
+        return if (result.ok && result.target != "back") {
+            CfaAiResult(false, "", "back", "fallback", result.model, "unexpected_target")
+        } else {
+            result
+        }
+    }
 
     /** Pure overload: POST {front, back} to the proxy at [baseUrl]; parse the result. */
     fun fill(
@@ -99,6 +322,157 @@ object CfaAiClient {
         } catch (e: Exception) {
             CfaAiResult(false, "", null, "fallback", null, "client_error:${e.javaClass.simpleName}")
         }
+    }
+
+    /**
+     * Semantic ethics grade via the proxy configured in [col]. Sends the passage,
+     * the correct + learner verdicts, the authored gold evidence spans, and the
+     * learner's highlighted phrases; the server grades SEMANTICALLY (meaning, not
+     * exact wording) and returns partial-credit tiers + cited Standard + personal
+     * coaching. Never throws — see [grade] below.
+     */
+    fun grade(
+        col: Collection,
+        passage: String,
+        answerVerdict: String,
+        judgedVerdict: String,
+        goldSpans: List<Pair<String, String>>,
+        learnerSpans: List<String>,
+        itemId: String = "",
+        standard: String = "",
+        poster: CfaHttpPost = DEFAULT_POST,
+    ): CfaGradeResult =
+        if (!aiEnabled(col, GRADING_KEY)) {
+            // AI grading toggled off (synced) — skip the proxy; the card's own
+            // deterministic grade stays authoritative. Honest error "ai_off".
+            fallbackGrade(standard, itemId, "ai_off")
+        } else {
+            grade(
+                proxyUrl(col),
+                proxyToken(col),
+                passage,
+                answerVerdict,
+                judgedVerdict,
+                goldSpans,
+                learnerSpans,
+                itemId,
+                standard,
+                poster,
+            )
+        }
+
+    /** The honest AI-off grade result (no network) — the card's deterministic grade stays authoritative. */
+    fun aiOffGrade(
+        standard: String = "",
+        itemId: String = "",
+    ): CfaGradeResult = fallbackGrade(standard, itemId, "ai_off")
+
+    /**
+     * Pure overload: POST the attempt to `/cfa/grade` at [baseUrl] and parse the
+     * result. On any failure (non-200, exception) this returns a `source ==
+     * "fallback"` result with [error] set and no AI text, so the card keeps its
+     * own deterministic grade and the UI honestly says AI was unavailable. Never
+     * throws.
+     */
+    @Suppress("LongParameterList")
+    fun grade(
+        baseUrl: String,
+        token: String,
+        passage: String,
+        answerVerdict: String,
+        judgedVerdict: String,
+        goldSpans: List<Pair<String, String>>,
+        learnerSpans: List<String>,
+        itemId: String,
+        standard: String,
+        poster: CfaHttpPost,
+    ): CfaGradeResult {
+        val gold = JSONArray()
+        for ((phrase, rationale) in goldSpans) {
+            gold.put(JSONObject().put("phrase", phrase).put("rationale", rationale))
+        }
+        val learner = JSONArray()
+        for (p in learnerSpans) learner.put(p)
+        val body =
+            JSONObject()
+                .put("passage", passage)
+                .put("answerVerdict", answerVerdict)
+                .put("judgedVerdict", judgedVerdict)
+                .put("goldSpans", gold)
+                .put("learnerSpans", learner)
+                .put("itemId", itemId)
+                .put("standard", standard)
+                .toString()
+        return try {
+            val (status, resp) = poster.post("${baseUrl.trimEnd('/')}/cfa/grade", token, body)
+            if (status != 200) {
+                return fallbackGrade(standard, itemId, "http_$status")
+            }
+            parseGrade(JSONObject(resp), standard, itemId)
+        } catch (e: Exception) {
+            fallbackGrade(standard, itemId, "client_error:${e.javaClass.simpleName}")
+        }
+    }
+
+    /** A client-side fallback grade (network/parse failure) — no AI text, honest error. */
+    private fun fallbackGrade(
+        standard: String,
+        itemId: String,
+        error: String,
+    ) = CfaGradeResult(
+        ok = false,
+        source = "fallback",
+        grade = "",
+        verdictCorrect = false,
+        correct = false,
+        explanation = "",
+        coaching = "",
+        studyTip = "",
+        confidence = null,
+        standard = standard,
+        itemId = itemId,
+        perSpan = emptyList(),
+        model = null,
+        error = error,
+    )
+
+    /** Parse a `/cfa/grade` JSON body (snake_case result keys) into [CfaGradeResult]. */
+    private fun parseGrade(
+        o: JSONObject,
+        fallbackStandard: String,
+        fallbackItemId: String,
+    ): CfaGradeResult {
+        val spans = mutableListOf<CfaGradeSpan>()
+        val arr = o.optJSONArray("per_span")
+        if (arr != null) {
+            for (i in 0 until arr.length()) {
+                val s = arr.optJSONObject(i) ?: continue
+                spans.add(
+                    CfaGradeSpan(
+                        phrase = s.optString("phrase", ""),
+                        matched = s.optBoolean("matched", false),
+                        note = s.optString("note", ""),
+                    ),
+                )
+            }
+        }
+        val confidence = if (o.isNull("confidence")) null else o.optDouble("confidence").takeIf { !it.isNaN() }
+        return CfaGradeResult(
+            ok = o.optBoolean("ok", false),
+            source = o.optString("source", "fallback"),
+            grade = o.optString("grade", ""),
+            verdictCorrect = o.optBoolean("verdict_correct", false),
+            correct = o.optBoolean("correct", false),
+            explanation = o.optString("explanation", ""),
+            coaching = o.optString("coaching", ""),
+            studyTip = o.optString("study_tip", ""),
+            confidence = confidence,
+            standard = o.optString("standard", "").ifBlank { fallbackStandard },
+            itemId = o.optString("item_id", "").ifBlank { fallbackItemId },
+            perSpan = spans,
+            model = o.optString("model", "").ifBlank { null },
+            error = o.optString("error", "").ifBlank { null },
+        )
     }
 
     /** Default HTTP POST via HttpURLConnection (no extra dependency). */

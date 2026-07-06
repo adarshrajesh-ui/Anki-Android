@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later
+     CFA fork — Concept Map (mastery engine), the SAME self-contained radial map
+     the desktop renders, so the tab is IDENTICAL on phone and desktop. Layout +
+     node SIZES (= exam weight) + the charcoal->gold fill mechanic + the
+     templated (AI-off) explanations all match the approved spec
+     (.lavish/concept-map-spec.html) and the desktop engine
+     (ts/lib/cfa/pages/conceptmap.ts). The host Activity injects the learner's
+     REAL per-topic mastery via `window.CFA_MAP_DATA`; with no data injected the
+     map renders the honest all-gray (abstaining) state. Pinch-zoom is provided
+     by the WebView's built-in zoom controls (CfaConceptMapActivity). -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=4, user-scalable=yes" />
+<title>EthosPrep — Concept Map</title>
+<style>
+  :root{
+    --ink:#F5F2E8; --muted:#A8ACB8; --faint:#737987;
+    --line:rgba(255,255,255,.12); --surface:#07080B; --bg:#10131A;
+    --panel-2:#151925; --turq:#F0CF80; --turq-deep:#D9AA4F; --turq-soft:rgba(217,170,79,.14);
+    --empty:#252A34; --accent:#D9AA4F;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; padding:0;}
+  body{font-family:var(--sans); color:var(--ink); background:radial-gradient(circle at 12% -8%,rgba(217,170,79,.18),transparent 34rem),radial-gradient(circle at 100% 0,rgba(122,167,255,.10),transparent 28rem),var(--surface); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;}
+  .wrap{max-width:1160px; margin:0 auto; padding:14px 14px 40px;}
+  .eyebrow{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--turq-deep);}
+  h1{font-family:var(--sans); font-size:22px; font-weight:700; line-height:1.15; margin:4px 0 6px; letter-spacing:-.01em;}
+  .lede{font-size:14px; color:var(--muted); margin:0 0 12px;}
+  .howto{display:flex; gap:12px; flex-wrap:wrap; margin:0 0 12px; font-size:12.5px; color:var(--muted);}
+  .howto div{display:flex; gap:6px; align-items:center;}
+  .howto b{color:var(--ink);}
+  .pill{display:inline-block; padding:2px 9px; border-radius:100px; font-size:11px; font-weight:600; white-space:nowrap; background:var(--turq-soft); color:var(--turq-deep);}
+  .pill.soft{background:rgba(255,255,255,.04); color:var(--muted); border:1px solid var(--line);}
+
+  .mapbox{background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02)),var(--bg); border:1px solid var(--line); border-radius:18px; padding:6px; overflow:hidden; position:relative; box-shadow:0 16px 40px rgba(0,0,0,.28);}
+  .mapbox svg{width:100%; height:auto; display:block; touch-action:manipulation;}
+  .node{cursor:pointer;}
+  .node .rest{transition:opacity .18s ease;}
+  .node .fillg{opacity:0; transition:opacity .2s ease;}
+  .node .ring{opacity:0; transition:opacity .18s ease;}
+  .node.hot .rest,.node.sel .rest{opacity:0;}
+  .node.hot .fillg,.node.sel .fillg{opacity:1;}
+  .node.hot .ring,.node.sel .ring{opacity:1;}
+  .tlabel{font-family:var(--sans); font-size:12.5px; font-weight:600; fill:var(--ink); paint-order:stroke; stroke:#07080B; stroke-width:3.2px; stroke-linejoin:round;}
+  .clabel{font-family:var(--sans); font-weight:700; fill:var(--ink); letter-spacing:.04em; paint-order:stroke; stroke:#07080B; stroke-width:3px; stroke-linejoin:round;}
+  .legendrow{display:flex; align-items:center; gap:10px; padding:6px 10px 2px;}
+  .legendbar{height:12px; border-radius:100px; background:linear-gradient(90deg,var(--empty),var(--turq)); border:1px solid var(--line); flex:1;}
+  .meta{font-size:12px; color:var(--faint);}
+  .mapcap{padding:2px 12px 6px; text-align:center;}
+
+  .panel{background:var(--bg); border:1px solid var(--line); border-radius:18px; padding:16px; margin-top:14px; display:flex; flex-direction:column; box-shadow:0 14px 34px rgba(0,0,0,.22);}
+  .panel .p-eb{font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--turq-deep);}
+  .panel .ptitle{font-family:var(--sans); font-size:19px; font-weight:700; margin:2px 0 0;}
+  .panel .ppct{font-size:13px; color:var(--turq-deep); font-weight:700; margin-top:2px;}
+  .panel .pmeta{font-size:12px; color:var(--faint); margin-top:2px;}
+  .gauge{height:10px; border-radius:100px; background:var(--empty); overflow:hidden; margin:12px 0 4px;}
+  .gauge > i{display:block; height:100%; background:linear-gradient(90deg,var(--turq),var(--turq-deep)); width:0; transition:width .35s ease;}
+  /* Abstaining node: a neutral diagonal hatch reads as "awaiting evidence /
+     not applicable", never as a measured 0% fill — honours the give-up rule,
+     matching the desktop CfaConceptMapPage gauge (fix D-P4-1). */
+  .gauge.is-nodata{background:repeating-linear-gradient(-45deg,var(--empty),var(--empty) 4px,var(--panel-2) 4px,var(--panel-2) 8px); border:1px solid var(--line);}
+  .panel .expl{font-size:14px; color:var(--ink); margin-top:12px; line-height:1.6;}
+  .panel .expl.placeholder{color:var(--faint);}
+  .panel .drill{margin-top:12px;}
+  .panel .drillchip{display:inline-block; background:var(--turq-soft); color:var(--turq-deep); border-radius:10px; padding:9px 12px; font-size:13px; font-weight:600;}
+  .aitag{margin-top:12px; font-size:11.5px; color:var(--faint); border-top:1px dashed var(--line); padding-top:10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Concept Map · same on phone &amp; desktop</div>
+  <h1>Concept Map — the mastery engine</h1>
+  <p class="lede">CFA at the centre, the test sections orbiting it, each section's subsections beyond. Node <b>size = exam weight</b>; node <b>fill = your mastery</b>, charcoal → gold.</p>
+  <div class="howto">
+    <div><span class="pill">tap</span> <span>a node's <b>name</b> + how <b>full</b> it is (%)</span></div>
+    <div><span class="pill soft">size</span> <span>= exam <b>weight</b> · fill = <b>mastery</b></span></div>
+  </div>
+
+  <div class="mapbox">
+    <svg id="map" viewBox="0 0 1000 740" role="img" aria-label="Interactive CFA concept mastery map">
+      <defs id="defs">
+        <linearGradient id="turqfill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#F0CF80"/><stop offset="1" stop-color="#D9AA4F"/>
+        </linearGradient>
+        <radialGradient id="centerglow" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#D9AA4F" stop-opacity="0.22"/><stop offset="1" stop-color="#D9AA4F" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3.2" flood-color="#000000" flood-opacity="0.42"/>
+        </filter>
+      </defs>
+      <circle cx="500" cy="366" r="170" fill="url(#centerglow)"></circle>
+      <g id="edges" fill="none" stroke-linecap="round"></g>
+      <g id="nodes"></g>
+      <g id="tip" opacity="0" pointer-events="none" transform="translate(-4000,-4000)">
+        <rect id="tipbg" rx="8" ry="8" fill="#10131A"></rect>
+        <text id="tipname" text-anchor="middle" font-family="system-ui,sans-serif" font-size="15" font-weight="600" fill="#fff"></text>
+        <text id="tippct" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#F0CF80"></text>
+      </g>
+    </svg>
+    <div class="legendrow">
+      <span class="meta">0%</span>
+      <div class="legendbar"></div>
+      <span class="meta">100% mastered</span>
+    </div>
+    <div class="mapcap"><span class="meta">Size = exam weight · fill = your mastery · tap a pinned node again (or press Esc) to unpin</span></div>
+  </div>
+
+  <aside class="panel" id="panel">
+    <div class="p-eb" id="p-eb">Tap a node</div>
+    <div class="ptitle" id="p-title">Your CFA map</div>
+    <div class="ppct" id="p-pct">Tap any node for its name &amp; fill</div>
+    <div class="pmeta" id="p-meta">Bigger node = bigger share of the exam</div>
+    <div class="gauge" id="p-gaugewrap" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i id="p-gauge"></i></div>
+    <p class="expl placeholder" id="p-expl">Tap a node to pin a plain-English explanation of how that score came to be. The big centre node is <b>CFA</b> (overall readiness); the orbit around it is the <b>test sections</b> sized by exam weight; the outer dots are their <b>subsections</b>.</p>
+    <div class="drill" id="p-drillwrap" style="display:none;"><span class="drillchip" id="p-drill"></span></div>
+    <div class="aitag" id="p-ai"></div>
+  </aside>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var CX = 500, CY = 366, RC = 60, R2 = 306;
+  var EMPTY = "#E9EDF1";
+
+  // Fixed, organic layout — angle + orbit jitter are CONSTANT so the map never
+  // reshuffles between opens. `w` is the canonical exam weight (percent) that
+  // drives node SIZE (matches the desktop TOPIC_LAYOUT / spec), keyed by slug.
+  var TOPICS = [
+    { slug:"ethics",       k:"Ethics",       full:"Ethics & Professional Standards",  w:12.5, band:"10–15%", ang:274, r1j:-6,  subs:[["Standards I–VII",-12],["GIPS",12]] },
+    { slug:"quant",        k:"Quant",        full:"Quantitative Methods",             w:7.5,  band:"5–10%",  ang:306, r1j:10,  subs:[["Regression",-11],["Time-Series",11]] },
+    { slug:"econ",         k:"Economics",    full:"Economics",                        w:7.5,  band:"5–10%",  ang:342, r1j:-4,  subs:[["Currency",-11],["Growth",11]] },
+    { slug:"fra",          k:"FRA",          full:"Financial Reporting & Analysis",   w:12.5, band:"10–15%", ang:20,  r1j:8,   subs:[["Intercorporate",-12],["Pensions",12]] },
+    { slug:"corp",         k:"Corp. Issuers",full:"Corporate Issuers",                w:7.5,  band:"5–10%",  ang:58,  r1j:-9,  subs:[["Capital Structure",-11],["ESG",11]] },
+    { slug:"equity",       k:"Equity",       full:"Equity Investments",               w:12.5, band:"10–15%", ang:96,  r1j:7,   subs:[["FCFE / FCFF",-12],["Residual Income",12]] },
+    { slug:"fixed-income", k:"Fixed Income", full:"Fixed Income",                     w:12.5, band:"10–15%", ang:140, r1j:-8,  subs:[["Term Structure",-12],["Credit",12]] },
+    { slug:"derivatives",  k:"Derivatives",  full:"Derivatives",                      w:7.5,  band:"5–10%",  ang:176, r1j:5,   subs:[["Forwards / Futures",-11],["Options",11]] },
+    { slug:"altinv",       k:"Alt. Inv.",    full:"Alternative Investments",          w:7.5,  band:"5–10%",  ang:212, r1j:11,  subs:[["Real Estate",-11],["Private Equity",11]] },
+    { slug:"portmgmt",     k:"Portfolio",    full:"Portfolio Management",             w:12.5, band:"10–15%", ang:240, r1j:-6,  subs:[["Active Mgmt",-12],["Risk",12]] }
+  ];
+
+  function topicR(w){ return 20 + w * 1.55; }   // size ∝ exam weight
+  function subR(w){ return 12 + w * 0.5; }
+  function rad(d){ return d * Math.PI / 180; }
+
+  // Real per-slug mastery injected by the host Activity (null => abstain/gray).
+  var DATA = (typeof window.CFA_MAP_DATA === "object" && window.CFA_MAP_DATA) || {};
+  var SLUGS = DATA.slugs || {};
+  // Real per-concept due/new card counts, keyed by the SAME short slug as SLUGS
+  // ({ ethics:{due:3,new:5}, ... }). Empty when the host could not read them.
+  var COUNTS = DATA.counts || {};
+  var SOURCE = DATA.source || "fallback";
+
+  // The SINGLE batched AI explanation (parity with the desktop pycmd bridge):
+  // when the tab opens we hand the host Activity the node list and it answers,
+  // in ONE proxy call, with an id -> plain-English "why" map. Until then (and
+  // whenever AI is off or the call fails) the deterministic templated wording is
+  // shown, with honest provenance. states: pending|loading|on|off|failed.
+  var AI = { state: "pending", byId: {}, error: null };
+  var NODEDEFS = [];        // {id, full, kind, pct, band, parent} for the batched call
+  var pinnedNode = null;    // the currently-pinned node (re-rendered when AI lands)
+  function masteryFor(slug){
+    if (!SLUGS.hasOwnProperty(slug)) return null;
+    var v = SLUGS[slug];
+    return (typeof v === "number") ? Math.max(0, Math.min(1, v)) : null;
+  }
+  function overall(){
+    if (typeof DATA.overall === "number") return Math.max(0, Math.min(1, DATA.overall));
+    return null;
+  }
+
+  // charcoal -> gold interpolation for the Lane 4 premium night theme. null => gray.
+  function mix(m){
+    if (m === null) return EMPTY;
+    var g=[0x25,0x2a,0x34], t=[0xd9,0xaa,0x4f], c=g.map(function(gv,i){return Math.round(gv+(t[i]-gv)*m);});
+    return "rgb("+c[0]+","+c[1]+","+c[2]+")";
+  }
+  function pctOf(m){ return m === null ? null : Math.round(m*100); }
+  function label(m){ if(m===null) return "no data yet"; var p=m*100; return p>=70?"exam-ready":(p>=45?"getting there":"needs work"); }
+
+  // Templated, plain-English "why" (the AI-off fallback — verbatim parity with
+  // the desktop templatedExplanation, incl. the honest give-up wording).
+  function explain(node){
+    // Prefer the batched AI wording for this node when it has arrived; otherwise
+    // fall through to the deterministic templated explanation below.
+    if (AI.state==="on" && node.id && AI.byId.hasOwnProperty(node.id)) return AI.byId[node.id];
+    var kind=node.kind, full=node.full, m=node.m, pct=node.pct, parent=node.parent;
+    if (m === null || pct === null){
+      if (kind==="cfa") return "Your overall readiness is still gray — there aren't enough graded reviews yet to roll up an honest number. Study a few sections and this centre node starts to fill. (The give-up rule: no evidence, no fake confidence.)";
+      var what = kind==="sub" ? (full+" (under "+parent+")") : full;
+      return what+" is gray because there isn't enough evidence yet to score it — it stays dim until you've logged enough graded reviews here. Brightness is earned, never faked.";
+    }
+    var recall = pct>=70?"solid":(pct>=45?"decent":"shaky");
+    if (kind==="cfa") return "This is your overall CFA readiness — about "+pct+"%. It's the weight-adjusted roll-up of every section below, so your biggest, dimmest sections move it the most. Filling a heavy gray section lifts the centre far more than topping up one that's already gold.";
+    if (kind==="sub") return "You're at about "+pct+"% on "+full+" (under "+parent+"). This reflects the "+parent+" section estimate — recall there is "+recall+", but it tends to bend under exam-style wording. A few targeted near-miss drills fill it fastest. (Per-subsection tracking arrives as you log more reviews.)";
+    return "You're at about "+pct+"% on "+full+". Recall is "+recall+", but "+full+" still slips on reworded vignettes — that's what keeps it from filling. A short set of "+full+" near-miss drills is the quickest way to more gold.";
+  }
+  // Real per-concept due/new counts (parity with the desktop worker's shared
+  // spec) keyed by short slug. Reserved-word "new" is read via bracket access
+  // and carried internally as `nw`.
+  function countsFor(slug){
+    if (slug && COUNTS.hasOwnProperty(slug)){
+      var c = COUNTS[slug];
+      if (c && typeof c === "object") return { due:(c.due|0), nw:(c["new"]|0) };
+    }
+    return null;
+  }
+  // The centre CFA node rolls up the whole exam: total due/new across concepts.
+  function totalCounts(){
+    var due=0, nw=0, any=false;
+    for (var k in COUNTS){ if(COUNTS.hasOwnProperty(k)){ var c=COUNTS[k];
+      if(c && typeof c==="object"){ any=true; due+=(c.due|0); nw+=(c["new"]|0); } } }
+    return any ? { due:due, nw:nw } : null;
+  }
+  // "<dueCount> cards due" (+ " · <newCount> new" only when 0 due but new exist),
+  // so an all-new concept never reads as a bare "0 due". Matches the shared spec.
+  function dueText(c){
+    var t = c.due + " cards due";
+    if (c.due === 0 && c.nw > 0) t += " · " + c.nw + " new";
+    return t;
+  }
+  // The detail chip: real due count for a concept (topic/subsection) or the
+  // exam-wide total for the centre; null (chip hidden) when counts are absent.
+  function drillFor(node){
+    var c = node.kind==="cfa" ? totalCounts() : countsFor(node.slug);
+    return c ? dueText(c) : null;
+  }
+
+  var defs=document.getElementById("defs"), gEdges=document.getElementById("edges"), gNodes=document.getElementById("nodes");
+  var tip=document.getElementById("tip"), tipbg=document.getElementById("tipbg"), tipname=document.getElementById("tipname"), tippct=document.getElementById("tippct");
+  var svg=document.getElementById("map"), uid=0;
+  var SVGNS="http://www.w3.org/2000/svg";
+  function el(name, attrs){ var e=document.createElementNS(SVGNS,name); for(var k in attrs) e.setAttribute(k,attrs[k]); return e; }
+
+  function addNode(node){
+    var x=node.x, y=node.y, r=node.r, m=node.m, kind=node.kind;
+    // Record this node for the batched AI call, keyed by the SAME id scheme the
+    // desktop uses (cfa / topic:<slug> / sub:<slug>:<name>) so ids match.
+    NODEDEFS.push({ id:node.id, full:node.full, kind:node.kind, pct:node.pct, band:node.band||null, parent:node.parent||null });
+    uid++; var cid="clip"+uid;
+    var cp=el("clipPath",{id:cid}); cp.appendChild(el("circle",{cx:x,cy:y,r:r})); defs.appendChild(cp);
+    var g=el("g",{"class":"node"});
+    var disc=el("g",{filter:"url(#soft)"});
+    disc.appendChild(el("circle",{"class":"rest",cx:x,cy:y,r:r,fill:mix(m),stroke:kind==="cfa"?"#BFE4E1":"#D7DEE4","stroke-width":kind==="cfa"?2:1}));
+    var fg=el("g",{"class":"fillg","clip-path":"url(#"+cid+")"});
+    fg.appendChild(el("rect",{x:x-r,y:y-r,width:2*r,height:2*r,fill:EMPTY}));
+    var mm=(m===null?0:m), fh=2*r*mm;
+    fg.appendChild(el("rect",{x:x-r,y:y+r-fh,width:2*r,height:fh,fill:"url(#turqfill)"}));
+    disc.appendChild(fg);
+    disc.appendChild(el("circle",{"class":"ring",cx:x,cy:y,r:r+3,fill:"none",stroke:"#D9AA4F","stroke-width":3}));
+    g.appendChild(disc);
+    if (kind==="cfa"){
+      var t=el("text",{"class":"clabel",x:x,y:y+7,"text-anchor":"middle","font-size":21}); t.textContent="CFA"; g.appendChild(t);
+    } else if (node.persistentLabel){
+      var out=r+13, lx=x+Math.cos(node.labelAngle)*out, ly=y+Math.sin(node.labelAngle)*out;
+      var anchor=Math.cos(node.labelAngle)>0.25?"start":(Math.cos(node.labelAngle)<-0.25?"end":"middle");
+      var tl=el("text",{"class":"tlabel",x:lx,y:ly+4,"text-anchor":anchor}); tl.textContent=node.name; g.appendChild(tl);
+    }
+    function enter(){ g.classList.add("hot"); showTip(x,y,r,node.name,node.pct); }
+    function leave(){ g.classList.remove("hot"); hideTip(); }
+    // Tapping the already-pinned node UNPINS it (toggle) so a user is never
+    // trapped on one node's explanation — there is always a way back to the calm
+    // placeholder panel (matches the desktop unpin fix D-P4-5).
+    function pick(){
+      var wasSel=g.classList.contains("sel");
+      clearSel();
+      if (wasSel){ resetPanel(); return; }
+      g.classList.add("sel"); setPanel(node);
+    }
+    g.addEventListener("mouseenter",enter); g.addEventListener("mouseleave",leave);
+    g.addEventListener("click",pick);
+    g.addEventListener("touchstart",function(){ enter(); pick(); },{passive:true});
+    gNodes.appendChild(g);
+  }
+
+  function showTip(x,y,r,name,pct){
+    tipname.textContent=name; tippct.textContent=(pct===null?"no data yet":pct+"% mastered");
+    var above=(y-r-42)>6, ty=above?(y-r-8):(y+r+42);
+    tipname.setAttribute("x",x); tipname.setAttribute("y",ty-16);
+    tippct.setAttribute("x",x); tippct.setAttribute("y",ty+7);
+    var w=Math.max(name.length*8.6,96)+26;
+    tipbg.setAttribute("x",x-w/2); tipbg.setAttribute("y",ty-35); tipbg.setAttribute("width",w); tipbg.setAttribute("height",48);
+    tip.setAttribute("transform","translate(0,0)"); tip.setAttribute("opacity","1"); svg.appendChild(tip);
+  }
+  function hideTip(){ tip.setAttribute("opacity","0"); tip.setAttribute("transform","translate(-4000,-4000)"); }
+
+  function setPanel(node){
+    pinnedNode=node;
+    var pct=node.pct, m=node.m, kind=node.kind;
+    document.getElementById("p-eb").textContent = kind==="cfa"?"Overall":(kind==="sub"?("Subsection · "+node.parent):"Test section");
+    document.getElementById("p-title").textContent=node.name;
+    document.getElementById("p-pct").textContent = (pct===null? "No data yet — abstaining" : (pct+"% mastered · "+label(m)));
+    document.getElementById("p-meta").textContent = kind==="cfa"?"Weight-adjusted across all sections":(kind==="sub"?("Subsection of "+node.parent):("Exam weight "+node.band+" of your grade"));
+    // Give-up rule: an abstaining (no-evidence) node must NOT draw a 0%-width
+    // fill — that reads as a measured "you scored zero", conflating no-data with
+    // a genuine 0%. Show the hatch track (via .is-nodata) with no fill bar, and
+    // expose the distinction to screen readers (matches desktop fix D-P4-1).
+    var gwrap=document.getElementById("p-gaugewrap"), gbar=document.getElementById("p-gauge");
+    if (pct===null){
+      gwrap.classList.add("is-nodata");
+      gbar.style.width="0%"; gbar.style.display="none";
+      gwrap.removeAttribute("aria-valuenow");
+      gwrap.setAttribute("aria-valuetext","No data yet — awaiting evidence");
+    } else {
+      gwrap.classList.remove("is-nodata");
+      gbar.style.display="block"; gbar.style.width=pct+"%";
+      gwrap.setAttribute("aria-valuenow",pct);
+      gwrap.setAttribute("aria-valuetext",pct+"% mastered");
+    }
+    var ex=document.getElementById("p-expl"); ex.classList.remove("placeholder"); ex.textContent=explain(node);
+    // Detail chip shows the REAL per-concept due count ("<n> cards due"); it is
+    // hidden when no count is available (e.g. the host could not read them).
+    var dw=document.getElementById("p-drillwrap"), dtext=drillFor(node);
+    if (dtext){ document.getElementById("p-drill").textContent=dtext; dw.style.display="block"; }
+    else { dw.style.display="none"; }
+    renderAiTag();
+  }
+
+  function renderAiTag(){
+    var ai=document.getElementById("p-ai");
+    if (!ai) return;
+    // Honest provenance — say plainly WHICH grader produced the wording, never
+    // imply a live model when it was templated (parity with the desktop 4-state
+    // provenance line). "on" only after the batched AI call actually returned.
+    if (AI.state==="on"){
+      ai.textContent = "✦ AI-generated — a live model wrote this from your performance data in one batched call.";
+    } else if (AI.state==="loading"){
+      ai.textContent = "Generating a plain-English explanation… (templated wording shown until it arrives).";
+    } else if (AI.state==="failed"){
+      ai.textContent = "AI failed — showing the deterministic templated explanation instead. (Reason: " + (AI.error||"unavailable") + ".)";
+    } else {
+      ai.textContent = "AI off — deterministic templated explanation from your performance data. (Source: " + SOURCE + ".)";
+    }
+  }
+
+  // The host Activity calls this once with the batched-call result:
+  // {ok, aiOn, explanations:{id:text}, error}. Store the wording, set honest
+  // provenance, and re-render the pinned node (or the placeholder tag) in place.
+  window.cfaApplyMapExplain = function(res){
+    try {
+      res = res || {};
+      if (res.aiOn === false){ AI.state="off"; }
+      else if (res.ok && res.explanations && typeof res.explanations==="object" &&
+               Object.keys(res.explanations).length){ AI.byId=res.explanations; AI.state="on"; }
+      else { AI.state="failed"; AI.error=res.error || "ai_unavailable"; }
+    } catch(e){ AI.state="failed"; AI.error="apply_error"; }
+    if (pinnedNode){ setPanel(pinnedNode); } else { renderAiTag(); }
+  };
+
+  // Snapshot of the calm placeholder panel (captured at the end of build, after
+  // the initial renderAiTag), so unpinning restores the exact initial state
+  // incl. the bold-tag copy and the AI-provenance line.
+  var PANEL_INIT = null;
+  function clearSel(){ var sel=document.querySelectorAll(".node.sel"); for(var i=0;i<sel.length;i++) sel[i].classList.remove("sel"); }
+  // Unpin: drop the .sel highlight and put the panel back to its placeholder so a
+  // user is never stuck on one node's explanation (matches desktop D-P4-5).
+  function resetPanel(){ document.getElementById("panel").innerHTML=PANEL_INIT; pinnedNode=null; renderAiTag(); }
+  // Esc unpins from anywhere (the keyboard "emergency exit"), mirroring desktop.
+  document.addEventListener("keydown",function(e){
+    if ((e.key==="Escape"||e.key==="Esc") && document.querySelector(".node.sel")){
+      e.preventDefault(); clearSel(); resetPanel();
+    }
+  });
+
+  // ---- build geometry (subs, then topics, then centre on top) -------------
+  var nodes=[];
+  TOPICS.forEach(function(tp){
+    var a=rad(tp.ang), R1=196+tp.r1j;
+    tp._x=CX+Math.cos(a)*R1; tp._y=CY+Math.sin(a)*R1; tp._a=a; tp._r=topicR(tp.w);
+    tp._m=masteryFor(tp.slug);
+    gEdges.appendChild(el("line",{x1:CX,y1:CY,x2:tp._x,y2:tp._y,stroke:"#D3DBE1","stroke-width":(1.1+tp.w*0.12).toFixed(2)}));
+    tp.subs.forEach(function(s){
+      var sa=rad(tp.ang+s[1]), R2j=R2+(s[1]<0?-8:8);
+      s._x=CX+Math.cos(sa)*R2j; s._y=CY+Math.sin(sa)*R2j; s._a=sa;
+      gEdges.appendChild(el("line",{x1:tp._x,y1:tp._y,x2:s._x,y2:s._y,stroke:"#DFE5EA","stroke-width":1.4}));
+    });
+  });
+  TOPICS.forEach(function(tp){
+    tp.subs.forEach(function(s){
+      // Subsections inherit the parent concept's slug so the chip reports the
+      // concept's due count (per-subsection counts are not tracked yet).
+      addNode({ id:"sub:"+tp.slug+":"+s[0], slug:tp.slug, x:s._x, y:s._y, r:subR(tp.w), m:tp._m, pct:pctOf(tp._m), name:s[0], full:s[0], kind:"sub", parent:tp.full, band:null, persistentLabel:false, labelAngle:s._a });
+    });
+  });
+  TOPICS.forEach(function(tp){
+    addNode({ id:"topic:"+tp.slug, slug:tp.slug, x:tp._x, y:tp._y, r:tp._r, m:tp._m, pct:pctOf(tp._m), name:tp.k, full:tp.full, kind:"topic", parent:null, band:tp.band, persistentLabel:true, labelAngle:tp._a });
+  });
+  var cm=overall();
+  addNode({ id:"cfa", x:CX, y:CY, r:RC, m:cm, pct:pctOf(cm), name:"CFA", full:"Overall CFA readiness", kind:"cfa", parent:null, band:null, persistentLabel:false, labelAngle:0 });
+  renderAiTag();
+  PANEL_INIT = document.getElementById("panel").innerHTML;
+
+  // Fire the SINGLE batched AI explanation call on load (parity with desktop).
+  // The host Activity's AndroidCfaMap bridge answers via window.cfaApplyMapExplain.
+  // With no bridge (e.g. opened standalone) or AI off, the templated wording
+  // stays and provenance says so.
+  (function requestExplain(){
+    if (window.AndroidCfaMap && typeof window.AndroidCfaMap.explainMap === "function"){
+      AI.state="loading"; renderAiTag();
+      try { window.AndroidCfaMap.explainMap(JSON.stringify(NODEDEFS)); }
+      catch(e){ AI.state="failed"; AI.error="bridge_error"; renderAiTag(); }
+    } else {
+      AI.state="off"; renderAiTag();
+    }
+  })();
+})();
+</script>
+</body>
+</html>

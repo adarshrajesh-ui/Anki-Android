@@ -1,0 +1,40 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body>
+<div id="cfa-ai" hidden></div>
+<pre id="log"></pre>
+<script>
+// ---- VERBATIM shipped front.html android gate + renderAiGrade(ai_off) branch ----
+var fetchCalls = 0;
+window.fetch = function(){ fetchCalls++; return Promise.resolve({json:function(){return {};}}); };
+function renderAiGrade(resp){
+  var box=document.getElementById("cfa-ai");
+  var err=(resp.error||"").toString();
+  if(resp.source!=="ai" && (err==="ai_off"||!err)){
+    box.innerHTML='<span class="cfa-badge cfa-ai-badge is-off">Deterministic</span> AI grading is off — showing the offline (deterministic) grade';
+    box.hidden=false;
+  }
+}
+// the shipped android branch (front.html requestAiGrade)
+function androidBranch(){
+  // /android/i is true in this simulated phone
+  if (window.CFA_AI_GRADING_ENABLED === false) {
+    renderAiGrade({ source: "fallback", error: "ai_off" });
+    return;
+  }
+  window.fetch("http://10.0.2.2:27702/cfa/grade",{});
+}
+var out=[];
+// CASE 1: toggle OFF -> no fetch, Deterministic shown
+window.CFA_AI_GRADING_ENABLED=false; fetchCalls=0; document.getElementById("cfa-ai").hidden=true;
+androidBranch();
+out.push("toggle=OFF   -> fetchCalls="+fetchCalls+"  box='"+document.getElementById("cfa-ai").textContent.trim()+"'");
+// CASE 2: toggle ON -> proxy fetch attempted
+window.CFA_AI_GRADING_ENABLED=true; fetchCalls=0; document.getElementById("cfa-ai").hidden=true;
+androidBranch();
+out.push("toggle=ON    -> fetchCalls="+fetchCalls+"  (proxy called)");
+// CASE 3: undefined (older build) -> proxy fetch attempted (back-compat)
+delete window.CFA_AI_GRADING_ENABLED; fetchCalls=0;
+androidBranch();
+out.push("toggle=unset -> fetchCalls="+fetchCalls+"  (proxy called, back-compat)");
+document.getElementById("log").textContent=out.join("\n");
+window.__PROOF__=out.join("\n");
+</script></body></html>

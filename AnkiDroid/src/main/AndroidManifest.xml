@@ -321,6 +321,34 @@
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:parentActivityName=".CfaExamReadinessActivity"
             />
+        <!-- CFA fork: the flagship Ethics Minimal-Pairs drill (Home primary CTA). -->
+        <activity
+            android:name="com.ichi2.anki.CfaEthicsStudyActivity"
+            android:exported="false"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:parentActivityName=".CfaHomeActivity"
+            />
+        <!-- CFA fork: the Concept Map (radial mastery map), identical on phone & desktop. -->
+        <activity
+            android:name="com.ichi2.anki.CfaConceptMapActivity"
+            android:exported="false"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:parentActivityName=".DeckPicker"
+            />
+        <!-- CFA fork: the CFA Home / Today dashboard, the native CFA landing screen. -->
+        <activity
+            android:name="com.ichi2.anki.CfaHomeActivity"
+            android:exported="false"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:parentActivityName=".DeckPicker"
+            />
+        <!-- CFA fork: the mobile AI Settings screen (the two AI feature toggles). -->
+        <activity
+            android:name="com.ichi2.anki.CfaAiSettingsActivity"
+            android:exported="false"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:parentActivityName=".CfaHomeActivity"
+            />
 
         <!-- Context menu item name is the label, context is the system language -->
         <!-- Note: This appears to require that the target label is variable -->

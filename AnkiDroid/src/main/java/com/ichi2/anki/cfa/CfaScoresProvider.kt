@@ -1,17 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 // CFA fork — the single seam through which the Exam Readiness screen obtains
-// scores. Today it returns the deterministic on-device fallback ([CfaScores]).
+// scores. It prefers the shared Rust `compute_cfa_scores` RPC (one engine for
+// desktop + phone) and falls back to the deterministic on-device [CfaScorer]
+// whenever the RPC is unavailable or fails.
 //
-// When the orchestrator ships the Rust `compute_cfa_scores` RPC and its Kotlin
-// passthrough `col.backend.computeCfaScores(...)` (see
-// proof/friday/mobile/HANDOFF.md for the exact proto + generated signature we
-// need), swap the body of [scores] to call the RPC and map its response into
-// [CfaScores] with source = SOURCE_RPC. The Activity does not change.
+// The RPC + its Kotlin passthrough `col.backend.computeCfaScores(...)` are
+// produced by the fork engine build (Anki-Android-Backend →
+// CFA_FORK_ENGINE.md). When present, the numbers come from the SAME Rust code
+// the desktop app runs (`rslib/src/scheduler/cfa_scores.rs`); the Kotlin
+// fallback mirrors the same Python reference (`pylib/anki/cfa.py`), so the two
+// paths agree. The Activity does not change — it just reads [CfaScores.source]
+// to show provenance.
 
 package com.ichi2.anki.cfa
 
+import anki.scheduler.ComputeCfaScoresResponse
 import com.ichi2.anki.libanki.Collection
+import timber.log.Timber
 
 object CfaScoresProvider {
     /**
@@ -27,11 +33,111 @@ object CfaScoresProvider {
                 .any { it.name == "computeCfaScores" }
         }.getOrDefault(false)
 
-    /** Obtain the readiness scores, preferring the shared RPC when present. */
+    /**
+     * Obtain the readiness scores, preferring the shared RPC when present.
+     *
+     * If the backend exposes `computeCfaScores` AND the native engine actually
+     * implements it, the returned [CfaScores] carries `source = SOURCE_RPC`.
+     * Any failure (RPC absent, older native lib, backend error) transparently
+     * degrades to the deterministic on-device [CfaScorer] (`source =
+     * SOURCE_FALLBACK`) — the honest, no-network source of the numbers.
+     */
     fun scores(col: Collection): CfaScores {
-        // NOTE: when computeCfaScores lands, call it here and map to CfaScores
-        // (source = SOURCE_RPC). Until then, the deterministic fallback below is
-        // the honest, no-network source of the numbers.
-        return CfaScorer.compute(col)
+        if (rpcAvailable(col)) {
+            runCatching { fromRpc(col) }
+                .onSuccess {
+                    Timber.i("CFA scores source=rpc (shared Rust engine)")
+                    return it
+                }.onFailure { e ->
+                    Timber.w(e, "CFA computeCfaScores RPC failed; using on-device fallback")
+                }
+        }
+        val fb = CfaScorer.compute(col)
+        Timber.i("CFA scores source=fallback (on-device deterministic)")
+        return fb
     }
+
+    /** Call the shared RPC over the whole collection and map it into [CfaScores]. */
+    private fun fromRpc(col: Collection): CfaScores {
+        // whole_collection=true so we score every deck (matches the fallback);
+        // now=0 lets the backend use its own wall clock for retrievability.
+        val resp: ComputeCfaScoresResponse =
+            col.backend.computeCfaScores(
+                deckId = 0L,
+                wholeCollection = true,
+                now = 0L,
+            )
+        val mem = resp.memory
+        val perf = resp.performance
+        val rdy = resp.readiness
+
+        val topics =
+            mem.topicsList.map { t ->
+                TopicRecall(
+                    topic = t.topic,
+                    displayName = topicDisplayName(t.topic),
+                    weight = t.weight,
+                    gradedReviews = t.gradedReviews,
+                    avgR = if (t.hasAvgR()) t.avgR else null,
+                    covered = t.covered,
+                )
+            }
+
+        return CfaScores(
+            memory = mem.toHonest(),
+            performance = perf.toHonest(),
+            readiness = rdy.toHonest(),
+            topics = topics,
+            topicsTotal = mem.topicsTotal,
+            topicsCovered = mem.topicsCovered,
+            coveragePct = mem.coveragePct,
+            gradedReviews = mem.gradedReviews,
+            firstExposures = perf.firstExposures,
+            source = CfaScores.SOURCE_RPC,
+            bayesian = resp.bayesian.toVerdict(),
+        )
+    }
+
+    private fun anki.scheduler.CfaBayesianReadiness.toVerdict(): BayesianVerdict =
+        BayesianVerdict(
+            call = call,
+            callProb = callProb,
+            passed = call == "likely pass",
+            accuracy = accuracy,
+            ciLow = ciLow,
+            ciHigh = ciHigh,
+            mps = mps,
+            recall = if (hasRecall()) recall else null,
+            firstExposures = firstExposures,
+            topicsCovered = topicsCovered,
+            topicsTotal = topicsTotal,
+            label = label,
+        )
+
+    private fun anki.scheduler.CfaMemoryScore.toHonest(): HonestScore =
+        HonestScore(
+            abstain = abstain,
+            reason = reason,
+            point = if (hasPoint()) point else null,
+            rangeLow = if (hasRangeLow()) rangeLow else null,
+            rangeHigh = if (hasRangeHigh()) rangeHigh else null,
+        )
+
+    private fun anki.scheduler.CfaPerformanceScore.toHonest(): HonestScore =
+        HonestScore(
+            abstain = abstain,
+            reason = reason,
+            point = if (hasPoint()) point else null,
+            rangeLow = if (hasRangeLow()) rangeLow else null,
+            rangeHigh = if (hasRangeHigh()) rangeHigh else null,
+        )
+
+    private fun anki.scheduler.CfaReadinessScore.toHonest(): HonestScore =
+        HonestScore(
+            abstain = abstain,
+            reason = reason,
+            point = if (hasPoint()) point else null,
+            rangeLow = if (hasRangeLow()) rangeLow else null,
+            rangeHigh = if (hasRangeHigh()) rangeHigh else null,
+        )
 }

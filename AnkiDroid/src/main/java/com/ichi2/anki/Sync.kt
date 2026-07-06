@@ -78,13 +78,26 @@ fun syncAuth(): SyncAuth? {
 
 fun getEndpoint(): String? {
     val currentEndpoint = Prefs.currentSyncUri?.ifEmpty { null }
-    val customEndpoint =
-        if (Prefs.isCustomSyncEnabled) {
-            Prefs.customSyncUri
-        } else {
-            null
-        }
-    return currentEndpoint ?: customEndpoint
+    if (currentEndpoint != null && !isDeadLocalSyncEndpoint(currentEndpoint)) {
+        return currentEndpoint
+    }
+
+    // ankiCFA no longer supports a product-specific custom sync server. CFA state
+    // must travel through normal Anki sync (cards/revlog/config/custom data), so a
+    // stale loopback/custom endpoint should never block the user's Sync button.
+    if (currentEndpoint != null) {
+        Timber.i("Ignoring stale local sync endpoint; falling back to normal Anki sync")
+    } else if (Prefs.isCustomSyncEnabled) {
+        Timber.i("Ignoring custom sync server setting; ankiCFA uses normal Anki sync")
+    }
+    return null
+}
+
+private fun isDeadLocalSyncEndpoint(endpoint: String): Boolean {
+    val normalized = endpoint.lowercase()
+    return normalized.contains("127.0.0.1") ||
+        normalized.contains("localhost") ||
+        normalized.contains("10.0.2.2")
 }
 
 /**

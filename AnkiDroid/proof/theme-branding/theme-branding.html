@@ -1,0 +1,59 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CFA mobile theme — residual stock-blue leaks retoned</title>
+<style>
+  body{margin:0;background:#fff;color:#122B46;font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding:28px 32px}
+  h1{font-family:Georgia,serif;font-size:22px;margin:0 0 4px}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#A84500;margin-bottom:14px}
+  table{border-collapse:collapse;width:100%;max-width:900px;font-size:13px}
+  th,td{border:1px solid #E7E9EC;padding:8px 10px;text-align:left;vertical-align:middle}
+  th{background:#F3F6F8;font-weight:700}
+  .sw{display:inline-block;width:64px;height:22px;border:1px solid #E7E9EC;border-radius:5px;vertical-align:middle;margin-right:8px}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#4D5C6D}
+  .role{font-weight:600}
+  .note{max-width:900px;margin-top:16px;font-size:12px;color:#4D5C6D;line-height:1.5}
+</style>
+<div class="eyebrow">ankiCFA · Android theme · Phase B</div>
+<h1>Residual stock-AnkiDroid light-blue leaks → CFA palette</h1>
+<table>
+  <tr><th>Role (theme attr)</th><th>Before (stock blue)</th><th>After (CFA token)</th></tr>
+  <tr><td class="role">colorAccent<br><code>light</code></td>
+      <td><span class="sw" style="background:#455A64"></span><code>blue_grey_700</code></td>
+      <td><span class="sw" style="background:#122B46"></span><code>cfa_navy</code></td></tr>
+  <tr><td class="role">colorSecondaryContainer<br><code>light</code></td>
+      <td><span class="sw" style="background:#C1E7FF"></span><code>#C1E7FF</code></td>
+      <td><span class="sw" style="background:#FCEBDA"></span><code>cfa_accent_soft</code></td></tr>
+  <tr><td class="role">colorSurfaceContainerHigh<br><code>light</code></td>
+      <td><span class="sw" style="background:#E4F5FD"></span><code>#E4F5FD</code></td>
+      <td><span class="sw" style="background:#F3F6F8"></span><code>cfa_surface</code></td></tr>
+  <tr><td class="role">colorSurfaceContainer<br><code>light</code></td>
+      <td><span class="sw" style="background:#eef6fd"></span><code>6%-blue</code></td>
+      <td><span class="sw" style="background:#F3F6F8"></span><code>cfa_surface</code></td></tr>
+  <tr><td class="role">preferenceCategoryTitleTextColor<br><code>light · Settings</code></td>
+      <td><span class="sw" style="background:#0277BD"></span><code>light_blue_800</code></td>
+      <td><span class="sw" style="background:#A84500"></span><code>cfa_accent_ink</code></td></tr>
+  <tr><td class="role">editTextHighlightColor<br><code>light · editor</code></td>
+      <td><span class="sw" style="background:#81D4FA"></span><code>light_blue_200</code></td>
+      <td><span class="sw" style="background:#FCEBDA"></span><code>cfa_accent_soft</code></td></tr>
+  <tr><td class="role">customTabNavBarColor<br><code>light</code></td>
+      <td><span class="sw" style="background:#03A9F4"></span><code>light_blue_500</code></td>
+      <td><span class="sw" style="background:#122B46"></span><code>cfa_navy</code></td></tr>
+  <tr><td class="role">snackbarButtonTextColor<br><code>light · on dark bar</code></td>
+      <td><span class="sw" style="background:#4FC3F7"></span><code>light_blue_300</code></td>
+      <td><span class="sw" style="background:#F0894A"></span><code>cfa_accent_on_navy</code></td></tr>
+  <tr><td class="role">progressDialogButtonTextColor<br><code>light</code></td>
+      <td><span class="sw" style="background:#03A9F4"></span><code>light_blue_500</code></td>
+      <td><span class="sw" style="background:#122B46"></span><code>cfa_navy</code></td></tr>
+  <tr><td class="role">incrementerButtonBackground<br><code>light</code></td>
+      <td><span class="sw" style="background:#03A9F4"></span><code>light_blue_500</code></td>
+      <td><span class="sw" style="background:#122B46"></span><code>cfa_navy</code></td></tr>
+  <tr><td class="role">fab_normal / fab_pressed<br><code>DARK theme FAB</code></td>
+      <td><span class="sw" style="background:#0288D1"></span><code>light_blue_700</code></td>
+      <td><span class="sw" style="background:#DA5C01"></span><code>cfa_accent</code></td></tr>
+</table>
+<div class="note">
+  Every retoned role now references a token from <code>values/cfa.xml</code> (the phone's
+  mirror of the desktop CFA design system). The learned semantic colours — the Again/Hard/Good/Easy
+  ease buttons, the Learn/Review counts and the browser flags — are intentionally left untouched.
+  Guarded by <code>CfaThemeBrandingTest</code> (2 tests, green).
+</div>

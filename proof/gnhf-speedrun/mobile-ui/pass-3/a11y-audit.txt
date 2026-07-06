@@ -1,0 +1,90 @@
+CFA mobile — Phase B Pass 3 (ruthless), finding M-P3-2
+Screen-reader accessibility: Exam Readiness cards & topic rows
+=============================================================
+
+WHO CRITIQUED IT: a senior product-designer / QA pass auditing the flagship
+Exam Readiness screen for a NON-sighted (TalkBack) user. This is the second
+mobile Pass-3 finding, escalating past the Pass-3 colour/contrast audit
+(M-P3-1) into assistive-technology semantics.
+
+STANDARD: WCAG 2.1 SC 1.3.1 Info and Relationships (Level A) and SC 4.1.2
+Name, Role, Value (Level A).
+
+THE DEFECT (M-P3-2, MAJOR)
+--------------------------
+CfaExamReadinessActivity builds its three honest score cards and its per-topic
+recall rows PROGRAMMATICALLY as separate sibling TextViews inside a plain
+LinearLayout, with no accessibility grouping. Each TextView is therefore its
+own accessibility node, so TalkBack announces the content as disconnected
+swipes and the relationship between a name and its number is lost:
+
+  Score card  -> "MEMORY" … (swipe) … "Awaiting reviews" … (swipe) … "<reason>"
+  Topic row   -> "Alternative Investments" … (swipe, unrelated) … "no data"
+
+A blind user hears "Alternative Investments" and then, as a separate focus
+stop, a bare "no data" with nothing tying the two together.
+
+DEVICE-OBSERVABLE PROOF (emulator-5554, `uiautomator dump`)
+-----------------------------------------------------------
+The accessibility tree is the honest artifact for a screen-reader fix (the
+pixels do NOT change — a screenshot cannot show it). Both dumps taken on the
+live Exam Readiness screen; the "before" build was produced by git-stashing
+the activity fix and reinstalling (stash-isolation), so the pair differs only
+by this change.
+
+BEFORE (a11y-tree-readiness-before.xml) — grep content-desc, non-empty:
+  content-desc="Navigate up"
+  (…and NOTHING else — every card/row is content-desc="")
+  loose text fragments instead:
+    text="Alternative Investments"     text="no data"
+    text="Ethics & Professional…"      text="no data"
+    text="Awaiting reviews"            text="<verbatim reason>"
+
+AFTER (a11y-tree-readiness-after.xml) — grep content-desc, non-empty:
+  content-desc="Readiness: awaiting reviews. Keep studying — the Memory and
+                Performance scores below need more data first."
+  content-desc="Memory: awaiting reviews. not enough data: 22 graded reviews
+                (need 200), 0% topic coverage (need 50%)"
+  content-desc="Performance: awaiting reviews. not enough data: 21 first-seen
+                questions (need 30)"
+  content-desc="Alternative Investments: no recall data yet"
+  content-desc="Corporate Issuers: no recall data yet"
+  content-desc="Economics: no recall data yet"
+  content-desc="Equity Investments: no recall data yet"
+  content-desc="Ethics & Professional Standards: no recall data yet"
+  content-desc="Financial Reporting & Analysis: no recall data yet"
+  content-desc="Portfolio Management: no recall data yet"
+  content-desc="Quantitative Methods: no recall data yet"
+
+Each card and each topic row is now ONE screen-reader focus node reading a
+single coherent phrase; the inner TextViews are marked
+importantForAccessibility=no so they are not re-read as loose nodes.
+
+THE FIX
+-------
+- New pure helpers CfaAccessibility.kt: topicRowContentDescription(topic) and
+  scoreCardContentDescription(label, score, abstainOverride) build the coherent
+  labels (device-free, unit-testable — mirrors the desktop deadline.ts /
+  contrast.test.ts pure-helper pattern). Singular/plural "review(s)" handled.
+- CfaExamReadinessActivity sets card.contentDescription /
+  row.contentDescription + ViewCompat.setScreenReaderFocusable(view, true) on
+  the container, and importantForAccessibility=NO on every inner TextView.
+- Presentation/semantics only: the shared computeCfaScores RPC, the abstain
+  rule, the scores and the visible layout are untouched (05-readiness-a11y-
+  after.png is pixel-identical to the pre-fix screen).
+
+TESTS (all green)
+-----------------
+- CfaAccessibilityTest.kt (7 tests): the pure label builders produce single
+  coherent phrases (covered / single-review-singular / uncovered / scored /
+  abstaining / hero-override-does-not-leak-verbatim-reason) + a source-parsing
+  regression guard asserting the activity groups cards & rows and hides the
+  inner fragments (>=5 importantForAccessibility=NO).
+- Full CFA unit suite green; ktlintCheck green; lintVitalFullRelease green;
+  installFullDebug green.
+
+FILES
+-----
+  05-readiness-a11y-after.png          the (unchanged) screen the tree describes
+  a11y-tree-readiness-before.xml       full uiautomator dump, pre-fix
+  a11y-tree-readiness-after.xml        full uiautomator dump, post-fix

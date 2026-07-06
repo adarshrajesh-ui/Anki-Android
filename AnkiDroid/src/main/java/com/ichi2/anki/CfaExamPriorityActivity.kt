@@ -32,6 +32,7 @@ class CfaExamPriorityActivity : AnkiActivity(R.layout.activity_cfa_exam_priority
         if (showedActivityFailedScreen(savedInstanceState)) {
             return
         }
+        CfaShell.install(this, CfaShell.Tab.STUDY)
         enterExamPrioritySession()
     }
 

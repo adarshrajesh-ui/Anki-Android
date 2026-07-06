@@ -1,20 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- CFA fork: "Again" ease fill retoned from stock material_red to the CFA
+     design-system fail-red (cfa_ease_again). See values/cfa.xml. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
 <item android:id="@+id/shape_background">
     <selector>
         <item android:state_pressed="true">
             <shape android:shape="rectangle" >
-                <solid android:color="@color/material_red_500" />
+                <solid android:color="@color/cfa_ease_again_hover" />
             </shape>
         </item>
         <item android:state_focused="true">
             <shape android:shape="rectangle" >
-                <solid android:color="@color/material_red_900" />
+                <solid android:color="@color/cfa_ease_again_hover" />
             </shape>
         </item>
         <item>
             <shape android:shape="rectangle" >
-                <solid android:color="@color/material_red_700" />
+                <solid android:color="@color/cfa_ease_again" />
             </shape>
         </item>
     </selector>

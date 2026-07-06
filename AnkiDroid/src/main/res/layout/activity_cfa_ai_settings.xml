@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+  CFA fork: the mobile AI Settings screen. Branded CFA toolbar + a full-bleed
+  WebView that renders the shared self-contained toggles asset
+  (assets/cfa/ai_settings.html), fed the learner's synced AI toggles by
+  CfaAiSettingsActivity. The phone equivalent of the desktop AI Settings dialog.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/cfa_night_bg"
+    tools:context=".CfaAiSettingsActivity">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/cfa_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="?attr/actionBarSize"
+        android:background="@color/cfa_night_panel"
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+        app:titleTextColor="@color/cfa_night_ink"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <WebView
+        android:id="@+id/cfa_ai_settings_web"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/cfa_toolbar"
+        app:layout_constraintBottom_toTopOf="@id/cfa_bottom_nav"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <include
+        android:id="@+id/cfa_bottom_nav"
+        layout="@layout/cfa_bottom_shell"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

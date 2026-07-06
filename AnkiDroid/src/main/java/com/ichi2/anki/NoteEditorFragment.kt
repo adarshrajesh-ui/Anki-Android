@@ -614,6 +614,10 @@ class NoteEditorFragment :
         Timber.d("NoteEditor() onCollectionLoaded: caller: %s", caller)
         requireAnkiActivity().registerReceiver()
         fieldsLayoutContainer = requireView().findViewById(R.id.CardEditorEditFieldsLayout)
+        requireView().findViewById<Button>(R.id.cfa_ai_fill_button).setOnClickListener {
+            Timber.i("NoteEditor:: CFA complete-back button pressed")
+            fillWithAi()
+        }
         tagsButton = requireView().findViewById(R.id.CardEditorTagButton)
         cardsButton = requireView().findViewById(R.id.CardEditorCardsButton)
         cardsButton!!.setOnClickListener {
@@ -1549,10 +1553,10 @@ class NoteEditorFragment :
     }
 
     /**
-     * CFA fork — "AI Fill": generate whichever side is EMPTY (front->back or
-     * back->front) via the server-side AI proxy (the key never lives on the
-     * device). Runs off the UI thread, fills the empty field on success, reports
-     * provenance, and leaves the card untouched on any failure (AI-off safe).
+     * CFA fork — phone parity for desktop Tab-to-fill: a visible button completes
+     * the Back field from the Front via the server-side AI proxy (the key never
+     * lives on the device). It is intentionally back-only on phone; desktop keeps
+     * the Tab gesture.
      */
     private fun fillWithAi(silent: Boolean = false) {
         val fields = editFields
@@ -1572,20 +1576,25 @@ class NoteEditorFragment :
                 ?.toString()
                 ?.trim()
                 .orEmpty()
-        if (front.isEmpty() == back.isEmpty()) {
-            // both empty or both filled -> nothing to generate. Silent when fired
-            // by the Tab key so navigation never spams a snackbar.
+        if (front.isEmpty() || back.isNotEmpty()) {
             if (!silent) showSnackbar(R.string.cfa_ai_fill_need_one_side)
+            return
+        }
+        // Honour the synced AI toggle BEFORE any "drafting" flash: when AI is off
+        // (turned off here or on the desktop, then synced), the fill short-circuits
+        // with no network call and the card is left unchanged — deterministic.
+        if (!CfaAiClient.aiEnabled(getColUnsafe, CfaAiClient.TABFILL_KEY)) {
+            showSnackbar(R.string.cfa_ai_fill_off)
             return
         }
         launchCatchingTask {
             showSnackbar(R.string.cfa_ai_fill_drafting)
-            val result = withContext(Dispatchers.IO) { CfaAiClient.fill(getColUnsafe, front, back) }
+            val result = withContext(Dispatchers.IO) { CfaAiClient.fillBack(getColUnsafe, front) }
             if (result.ok && result.text.isNotBlank()) {
-                val idx = if (result.target == "front") 0 else 1
-                fields[idx].setText(result.text)
-                val side = if (result.target == "front") "front" else "back"
-                showSnackbar(getString(R.string.cfa_ai_fill_done, side, result.model ?: "ai"))
+                fields[1].setText(result.text)
+                showSnackbar(getString(R.string.cfa_ai_fill_done, result.model ?: "ai"))
+            } else if (result.error == "ai_off") {
+                showSnackbar(R.string.cfa_ai_fill_off)
             } else {
                 showSnackbar(getString(R.string.cfa_ai_fill_unavailable, result.error ?: "try again"))
             }
@@ -2056,9 +2065,8 @@ class NoteEditorFragment :
     ) {
         // Listen for changes in the first field so we can re-check duplicate status.
         editText!!.addTextChangedListener(EditFieldTextWatcher(index))
-        // CFA fork: the literal Tab key triggers bidirectional AI Fill (generate
-        // the empty side). Return false so Tab still moves focus normally;
-        // fillWithAi(silent=true) no-ops unless exactly one of front/back is filled.
+        // CFA fork: hardware Tab mirrors the visible phone button when possible.
+        // Return false so Tab still moves focus normally.
         editText.setOnKeyListener { _, keyCode, event ->
             if (keyCode == KeyEvent.KEYCODE_TAB && event.action == KeyEvent.ACTION_DOWN) {
                 fillWithAi(silent = true)

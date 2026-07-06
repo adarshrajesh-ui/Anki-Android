@@ -87,6 +87,16 @@
                 android:paddingVertical="@dimen/keyline_1"
                 android:paddingHorizontal="6dip" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/cfa_ai_fill_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="15dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/cfa_ai_fill"
+                app:icon="@drawable/ic_cfa_ai_fill"
+                app:iconGravity="textStart" />
+
             <LinearLayout
                 android:id="@+id/ImageOcclusionButtonsLayout"
                 android:layout_width="match_parent"

@@ -1,0 +1,53 @@
+Phase B — Mobile Pass 2 (harsher) — M7-1: Exam Readiness abstain triple-repeat
+==============================================================================
+
+Surface: CfaExamReadinessActivity (the flagship CFA screen), abstain / awaiting-data state.
+Branch: gnhf/speedrun-mobile. Device-observable on emulator-5554 (full-debug build).
+
+DEFECT (M7-1, MAJOR — clarity/redundancy)
+------------------------------------------
+In the awaiting-data state the three honest score cards (READINESS hero + MEMORY +
+PERFORMANCE) each render the shared engine's give-up `reason` verbatim. The engine's
+READINESS reason is a literal concatenation of the memory + performance reasons, so the
+hero card repeated the SAME counts that already appear on the two cards below it AND in
+the evidence caption — the user reads "22 graded reviews (need 200), 0% topic coverage
+(need 50%)" and "21 first-seen questions (need 30)" three times on one screen. Verbose,
+low-signal, and not premium. This is the exact defect the desktop team fixed in iter 26
+("state the verdict once in the Readiness hero, reason in the faint sub-line").
+
+Before: pass-2-before/03-readiness-repeat.png (+ 04-readiness-bottom-repeat.png)
+  READINESS card body = "not enough data to estimate readiness: memory (not enough data:
+  22 graded reviews (need 200), 0% topic coverage (need 50%)); performance (not enough
+  data: 21 first-seen questions (need 30))"  ← duplicates both cards below.
+
+FIX (presentation-only; no engine / score / count change)
+----------------------------------------------------------
+- CfaExamReadinessActivity.render(): when BOTH inputs still abstain
+  (scores.memory.abstain && scores.performance.abstain), the hero READINESS card now
+  shows a concise composite sub-line via a new `abstainOverride` param on scoreCard()
+  instead of the verbatim engine reason. When only one input abstains (partial), the
+  full engine reason is still shown (no information hidden).
+- New string cfa_readiness_abstain_hint =
+  "Keep studying — the Memory and Performance scores below need more data first."
+- The specific counts remain HONEST and visible: on the MEMORY card, the PERFORMANCE
+  card, and the evidence caption ("22 graded reviews · 0/8 topics covered (0%) · 21
+  first exposures"). Nothing is fabricated or removed from the record.
+
+After: pass-2/03-readiness-deduped.png
+  READINESS card body = the concise hint; MEMORY / PERFORMANCE carry the specific
+  counts; evidence caption unchanged.
+
+VERIFICATION (all green)
+------------------------
+- ./gradlew :AnkiDroid:installFullDebug        → BUILD SUCCESSFUL (device-observable capture)
+- ./gradlew :AnkiDroid:ktlintCheck             → BUILD SUCCESSFUL
+- ./gradlew :AnkiDroid:lintVitalFullRelease    → BUILD SUCCESSFUL (release-only gate; new
+                                                  string is referenced → no UnusedResources)
+- ./gradlew :AnkiDroid:testPlayDebugUnitTest --tests "com.ichi2.anki.cfa.*" → BUILD SUCCESSFUL
+
+Honesty notes
+-------------
+- Change is 100% presentation; the shared Rust `computeCfaScores` RPC (source = "shared
+  engine", visible on screen), the abstain give-up rule, and every count are untouched.
+- No GPT-4o vision critic available (no OPENAI_API_KEY); this is a labelled structured
+  senior-designer heuristic critique, mirroring a defect already confirmed+fixed on desktop.

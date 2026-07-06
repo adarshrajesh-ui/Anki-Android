@@ -1,0 +1,17 @@
+<!--
+  ~ SPDX-License-Identifier: GPL-3.0-or-later
+  ~ CFA fork: nav drawer icon for the CFA Home / Today dashboard surface.
+  ~ Google Material Design "home" icon (Apache 2.0), tinted to follow the
+  ~ drawer's control-normal colour like the other nav icons.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?colorControlNormal"
+    >
+  <path
+      android:fillColor="#FFFFFF"
+      android:pathData="M10,20v-6h4v6h5v-8h3L12,3 2,12h3v8z"/>
+</vector>

@@ -1,61 +1,212 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!--
-  CFA fork: shared branding tokens + strings for the ankiCFA surfaces
+  CFA fork: shared branding tokens + strings for the EthosPrep surfaces
   (nav drawer entry, Exam Readiness screen, exam-config editor, exam-priority
   study). Colours mirror the desktop CFA design system
   (docs/cfa/DESIGN-SYSTEM.md): a structural navy with a warm orange accent.
   Additive only — nothing here overrides upstream resources.
 -->
-<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="DuplicateCrowdInStrings,MissingTranslation,UnusedResources">
 
-    <!-- Brand palette (from the CFA design system single source of truth). -->
+    <!--
+      Brand palette (from the CFA design system single source of truth).
+      This is an intentionally complete token set mirroring the desktop
+      design system; some tokens are consumed by the Phase B UI refactor
+      rather than the current layouts, so the unused ones are marked.
+    -->
     <color name="cfa_navy">#122B46</color>
+    <!-- cfa_navy_hover now backs the shell colorPrimaryDark / status bar (Phase B
+         Pass-2 shell refactor), so it is no longer unused. -->
     <color name="cfa_navy_hover">#0E2238</color>
     <color name="cfa_accent">#DA5C01</color>
-    <color name="cfa_accent_soft">#FCEBDA</color>
-    <color name="cfa_pass">#15803D</color>
-    <color name="cfa_fail">#B91C1C</color>
-    <color name="cfa_warn">#B45309</color>
+    <!-- Pressed variant of the accent for the FAB / Study button (shell refactor). -->
+    <color name="cfa_accent_hover">#B34B01</color>
+    <color name="cfa_accent_soft" tools:ignore="UnusedResources">#FCEBDA</color>
+    <!--
+      Phase B Pass-3 (ruthless) WCAG AA contrast audit. The warm brand accent
+      cfa_accent (#DA5C01) is only ~3.8:1 on white/navy, so it FAILS WCAG AA
+      (>=4.5:1) as small readable TEXT — it is safe only for large fills, the FAB
+      tint, ripples and progress tints. These two accent-TEXT tokens keep the warm
+      CFA identity while clearing AA on the two surfaces the app actually renders
+      accent text on (the desktop design system solves the same problem with a
+      separate AA-safe eyebrow colour; see docs/cfa/DESIGN-SYSTEM.md):
+        - cfa_accent_ink   for small accent text on LIGHT backgrounds
+          (white 5.97:1 / cfa_surface 5.50:1) — the Readiness & Config eyebrows
+          and the exam countdown.
+        - cfa_accent_on_navy for small accent text on the NAVY drawer header
+          (navy 5.74:1) — darkening (like accent_ink) would REDUCE contrast on
+          navy, so navy needs a brighter warm tint instead.
+    -->
+    <color name="cfa_accent_ink">#A84500</color>
+    <color name="cfa_accent_on_navy">#F0894A</color>
+    <color name="cfa_pass" tools:ignore="UnusedResources">#15803D</color>
+    <color name="cfa_fail" tools:ignore="UnusedResources">#B91C1C</color>
+    <!-- cfa_warn reserved for a genuine near-deadline warning; abstain/empty
+         states use cfa_muted (Phase B M3-1/M3-2 fix), so it is currently unused. -->
+    <color name="cfa_warn" tools:ignore="UnusedResources">#B45309</color>
     <color name="cfa_surface">#F3F6F8</color>
     <color name="cfa_line">#E7E9EC</color>
     <color name="cfa_ink">#122B46</color>
     <color name="cfa_muted">#4D5C6D</color>
 
+    <!-- Lane 4 package/UI pass: premium CFA night shell for the dedicated mobile
+         CFA surfaces. These tokens intentionally layer on top of the existing
+         desktop-parity navy/orange palette instead of changing it globally. -->
+    <color name="cfa_night_bg">#07080B</color>
+    <color name="cfa_night_panel">#10131A</color>
+    <color name="cfa_night_panel_2">#151925</color>
+    <color name="cfa_night_ink">#F5F2E8</color>
+    <color name="cfa_night_muted">#A8ACB8</color>
+    <color name="cfa_night_line">#2B303B</color>
+    <color name="cfa_gold">#D9AA4F</color>
+    <color name="cfa_gold_light">#F0CF80</color>
+
+    <!--
+      Reviewer ease-answer button fills (Phase B mobile Reviewer sweep). The four
+      answer buttons — the highest-time-on-screen surface — shipped in raw stock
+      Material colours (again=material_red, hard=material_blue_grey, good=material_green,
+      easy=material_light_blue_500, the exact stock light-blue leak the objective
+      flags as "ugly"). These CFA-palette replacements give the four tiers one
+      on-brand four-tier scheme: fail-red / neutral-slate / pass-green / navy
+      (rising confidence), matching the desktop reviewer answer bar's CFA identity.
+      Every base fill clears WCAG AA (>=4.5:1) with the white answerButtonText:
+      fail 5.8:1 / slate 6.9:1 / good-green (darkened from cfa_pass for AA) 6.4:1 /
+      navy 15:1. The _hover shades back the pressed/focused states. Shared by the
+      light AND dark reviewer drawables so the ease buttons read identically in
+      both themes.
+    -->
+    <color name="cfa_ease_again">#B91C1C</color>
+    <color name="cfa_ease_again_hover">#8F1414</color>
+    <color name="cfa_ease_hard">#4D5C6D</color>
+    <color name="cfa_ease_hard_hover">#3A4653</color>
+    <color name="cfa_ease_good">#0F6E33</color>
+    <color name="cfa_ease_good_hover">#0B5527</color>
+    <color name="cfa_ease_easy">#122B46</color>
+    <color name="cfa_ease_easy_hover">#0E2238</color>
+
     <!-- Nav drawer / branding. Not translated (feature in progress). -->
-    <string name="cfa_nav_exam_readiness">Exam Readiness</string>
-    <string name="cfa_title_exam_readiness">Exam Readiness</string>
-    <!-- Log out entry (under Statistics): opens the sync account screen (Log out when logged in, Log in otherwise). -->
-    <string name="cfa_nav_sync_account">Log out</string>
+    <string name="cfa_brand_eyebrow">ANKICFA · CFA LEVEL II</string>
+    <string name="cfa_brand_wordmark">EthosPrep</string>
+    <string name="cfa_brand_tagline">CFA Level II · Exam Prep</string>
+    <string name="cfa_nav_exam_readiness" comment="Nav-drawer menu entry that opens the Exam Readiness screen; same words as its screen title but a distinct menu string" maxLength="28">Exam Readiness</string>
+    <string name="cfa_title_exam_readiness" comment="Action-bar title of the Exam Readiness screen; same words as the nav-drawer entry but a distinct title string">Exam Readiness</string>
+    <string name="cfa_nav_concept_map" comment="Nav-drawer menu entry that opens the Concept Map (radial mastery map) screen" maxLength="28">Concept Map</string>
+    <string name="cfa_title_concept_map" comment="Action-bar title of the Concept Map screen">Concept Map</string>
+    <string name="cfa_nav_home" comment="Nav-drawer menu entry that opens the CFA Home / Today dashboard (the native CFA landing screen)" maxLength="28">Home</string>
+    <string name="cfa_title_home" comment="Action-bar title of the CFA Home / Today dashboard screen">Exam Home</string>
+    <string name="cfa_title_ai_settings" comment="Action-bar title of the AI Settings screen (the two optional AI feature toggles)">AI Settings</string>
+    <!-- CFA fork: nav-drawer entries for the two study drills, giving the phone
+         the same native Home / Study / Ethics / Concept Map / Readiness nav the
+         desktop top bar has (previously reachable only from the Home dashboard). -->
+    <string name="cfa_nav_study" comment="Nav-drawer menu entry that launches a study session ordered by exam priority (weakest topics first)" maxLength="28">Study</string>
+    <string name="cfa_nav_ethics" comment="Nav-drawer menu entry that launches the Ethics Minimal-Pairs study drill" maxLength="28">Ethics</string>
+    <!-- CFA sync/account entry: connect when logged out, trigger sync when logged in. -->
+    <string name="cfa_nav_sync_account" maxLength="28">Connect &amp; Sync</string>
+    <!-- Lane 4 mobile shell: persistent CFA bottom navigation. -->
+    <string name="cfa_tab_today" maxLength="16">Today</string>
+    <string name="cfa_tab_study" maxLength="16">Study</string>
+    <string name="cfa_tab_readiness" maxLength="16">Readiness</string>
+    <string name="cfa_tab_map" maxLength="16">Map</string>
+    <string name="cfa_tab_library" maxLength="16">Library</string>
+    <string name="cfa_tab_more" maxLength="16">More</string>
 
     <!-- Exam Readiness screen. -->
     <string name="cfa_readiness_memory">Memory</string>
     <string name="cfa_readiness_performance">Performance</string>
     <string name="cfa_readiness_readiness">Readiness</string>
     <string name="cfa_readiness_per_topic">Per-topic recall</string>
+    <!-- Concise composite abstain sub-line for the hero Readiness card, shown INSTEAD of
+         repeating the memory + performance reasons verbatim when both inputs are still
+         awaiting data (the specific counts stay on the Memory / Performance cards and the
+         evidence caption below), mirroring the desktop "state the verdict once" fix. -->
+    <string name="cfa_readiness_abstain_hint">Keep studying — the Memory and Performance scores below need more data first.</string>
     <string name="cfa_readiness_source_fallback">Source: on-device (deterministic)</string>
     <string name="cfa_readiness_source_rpc">Source: shared engine</string>
-    <string name="cfa_readiness_refresh">Refresh</string>
+    <!-- Bayesian pass/fail VERDICT hero (matches the desktop Exam Readiness hero). -->
+    <string name="cfa_readiness_verdict_eyebrow">Exam readiness</string>
+    <string name="cfa_readiness_verdict_abstain">Not enough data — keep studying</string>
+    <!-- %1$s = the give-up reason; %2$s = the standing "not validated" caveat. -->
+    <string name="cfa_readiness_verdict_abstain_note">No pass/fail call yet — the estimate stays hidden until there is enough graded review evidence to be honest. %1$s · %2$s</string>
+    <string name="cfa_readiness_not_validated">not validated against real exam data</string>
 
     <!-- Exam config editor. -->
     <string name="cfa_exam_config_title">Exam configuration</string>
     <string name="cfa_exam_config_date_label">Exam date</string>
-    <string name="cfa_exam_config_pick_date">Pick date</string>
-    <string name="cfa_exam_config_save">Save</string>
+    <!-- Save button reuses the upstream @string/save to avoid a duplicate string. -->
     <string name="cfa_exam_config_saved">Exam configuration saved</string>
     <string name="cfa_exam_config_no_date">No exam date set</string>
+    <!-- Context line under the title explaining why setting the exam date matters
+         (Phase B Pass-2 M4-2 — the screen was sparse with no rationale). -->
+    <string name="cfa_exam_config_why">Set your exam date so EthosPrep can weight study by points-at-stake and show a live countdown on the Exam Readiness screen.</string>
+    <!-- Live countdown preview shown once a date is picked (M4-2). -->
+    <plurals name="cfa_exam_config_countdown">
+        <item quantity="one">%d day to the exam</item>
+        <item quantity="other">%d days to the exam</item>
+    </plurals>
+    <string name="cfa_exam_config_countdown_today">Your exam is today — good luck.</string>
+    <string name="cfa_exam_config_countdown_past">This exam date has already passed.</string>
 
-    <!-- AI Fill (bidirectional tab-fill) — generate the empty side via the AI proxy. -->
-    <string name="cfa_ai_fill">AI Fill (generate empty side)</string>
-    <string name="cfa_ai_fill_drafting">Generating with AI…</string>
+    <!-- Phone parity with desktop Tab-to-fill: visible button completes the Back via the AI proxy. -->
+    <string name="cfa_ai_fill" maxLength="28">Tab to complete the back</string>
+    <string name="cfa_ai_fill_drafting">Completing the back with AI…</string>
     <string name="cfa_ai_fill_no_two_fields">This note type has no separate front/back to fill.</string>
-    <string name="cfa_ai_fill_need_one_side">Type one side and leave the other empty, then AI Fill generates it.</string>
-    <string name="cfa_ai_fill_done">Drafted the %1$s with AI (%2$s)</string>
-    <string name="cfa_ai_fill_unavailable">AI unavailable — %1$s. Card left unchanged.</string>
+    <string name="cfa_ai_fill_need_one_side">Type the front and leave the back empty, then tap to complete the back.</string>
+    <string name="cfa_ai_fill_done">Drafted the back with AI (%1$s)</string>
+    <string name="cfa_ai_fill_unavailable">AI failed — %1$s. Card left unchanged.</string>
+    <string name="cfa_ai_fill_off">Deterministic — AI is turned off. Card left unchanged.</string>
 
     <!-- Exam-priority study action. -->
     <string name="cfa_study_by_priority">Study by Exam Priority</string>
     <string name="cfa_study_priority_empty">No cards to study by exam priority yet</string>
     <string name="cfa_study_priority_deck">CFA Exam Priority</string>
+
+    <!-- Ethics Minimal-Pairs study action (the flagship drill; mirrors the
+         desktop Home's primary "Study Ethics — Minimal Pairs" CTA). -->
+    <string name="cfa_study_ethics">Study Ethics — Minimal Pairs</string>
+    <string name="cfa_study_ethics_empty">No CFA Ethics cards are available to study yet</string>
+    <string name="cfa_study_ethics_deck">CFA Study — Ethics Minimal-Pairs</string>
+
+    <!--
+      CFA outlined-button style (Phase B M3-6 / M4-1 fix): the Material default
+      outlined button inherits the theme's blue accent for its label + stroke,
+      which reads as stock AnkiDroid on CFA screens. This reserves the CFA navy
+      for the label/stroke and the warm accent for the ripple.
+    -->
+    <style name="Widget.Cfa.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:textColor">@color/cfa_navy</item>
+        <item name="strokeColor">@color/cfa_navy</item>
+        <item name="rippleColor">@color/cfa_accent</item>
+    </style>
+
+    <!--
+      CFA reviewer "Show answer" button theme (Phase B Pass-2 mobile Reviewer
+      sweep). The legacy reviewer's flip button reused @style/HardButton, whose
+      answerButtonBackground resolves to the stock blue-grey hardButtonBackground;
+      when card animation is enabled the button is redrawn with footer_button_ripple,
+      which reads answerButtonBackground from the view's own theme overlay. Applying
+      this theme to the flip layout makes BOTH the static and the ripple path render
+      the primary CTA in brand navy, without touching the Hard ease button.
+    -->
+    <style name="CfaShowAnswerButton">
+        <item name="answerButtonBackground">@color/cfa_navy</item>
+    </style>
+
+    <style name="CfaBottomShellItem">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingStart">2dp</item>
+        <item name="android:paddingEnd">2dp</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:singleLine">true</item>
+    </style>
 
 </resources>

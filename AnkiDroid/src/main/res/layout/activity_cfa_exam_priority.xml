@@ -10,20 +10,25 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/cfa_night_bg">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/cfa_night_bg"
         android:orientation="vertical"
         android:gravity="center"
-        android:padding="32dp">
+        android:paddingStart="32dp"
+        android:paddingTop="32dp"
+        android:paddingEnd="32dp"
+        android:paddingBottom="96dp">
 
         <ProgressBar
             android:id="@+id/cfa_priority_progress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:indeterminateTint="@color/cfa_accent" />
+            android:indeterminateTint="@color/cfa_gold" />
 
         <TextView
             android:id="@+id/cfa_priority_message"
@@ -32,8 +37,15 @@
             android:layout_marginTop="16dp"
             android:gravity="center"
             android:text="@string/cfa_study_by_priority"
-            android:textColor="@color/cfa_muted"
+            android:textColor="@color/cfa_night_ink"
             android:textSize="15sp" />
 
     </LinearLayout>
+
+    <include
+        android:id="@+id/cfa_bottom_nav"
+        layout="@layout/cfa_bottom_shell"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:layout_gravity="bottom" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

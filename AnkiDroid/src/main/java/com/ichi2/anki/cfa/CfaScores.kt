@@ -99,6 +99,28 @@ data class TopicRecall(
 )
 
 /**
+ * The Bayesian readiness "hero": an explicit pass/fail call against the MPS
+ * proxy plus an estimated exam-weighted accuracy band. Unlike [HonestScore] this
+ * NEVER abstains — with little evidence the band is very wide and narrows as
+ * graded reviews accrue. Mirrors `cfa.BayesianReadiness` / the shared Rust
+ * engine's `CfaBayesianReadiness` field-for-field (see pylib/anki/cfa.py).
+ */
+data class BayesianVerdict(
+    val call: String, // "likely pass" | "likely fail"
+    val callProb: Double, // probability supporting the call (>= 0.5)
+    val passed: Boolean, // call == "likely pass"
+    val accuracy: Double, // estimated exam-weighted accuracy (point)
+    val ciLow: Double,
+    val ciHigh: Double,
+    val mps: Double, // minimum-passing-score proxy
+    val recall: Double?, // exam-weighted recall; null only with zero history
+    val firstExposures: Int,
+    val topicsCovered: Int,
+    val topicsTotal: Int,
+    val label: String, // standing honesty caveat, always present
+)
+
+/**
  * The full Exam Readiness payload: three honest scores + per-topic recall +
  * evidence, plus the provenance of where the numbers came from.
  */
@@ -114,6 +136,12 @@ data class CfaScores(
     val firstExposures: Int,
     /** "fallback" (deterministic on-device) or "rpc" (shared engine), for the UI. */
     val source: String,
+    /**
+     * The Bayesian pass/fail verdict hero (never abstains). Present on both the
+     * RPC and on-device paths; null only defensively when it could not be
+     * computed, in which case the UI shows the readiness [HonestScore] instead.
+     */
+    val bayesian: BayesianVerdict? = null,
 ) {
     companion object {
         const val SOURCE_FALLBACK = "fallback"
@@ -193,6 +221,14 @@ object CfaScorer {
         // desktop reference uses), so this stays consistent with the RPC math.
         val today = col.sched.today
         val nextDayAt = col.sched.dayCutoff
+
+        // Real wall clock ON PURPOSE (not TimeManager): the shared Rust
+        // `computeCfaScores` RPC is invoked with now=0, which makes the native
+        // engine use its own system wall clock for FSRS retrievability. The
+        // Kotlin fallback must use the same clock or RPC↔fallback parity breaks
+        // (a mock/collection clock diverges from the engine's, failing the
+        // 1e-6 parity test). See CfaScoresProvider (now = 0L).
+        @Suppress("DirectSystemCurrentTimeMillisUsage")
         val nowSecs = System.currentTimeMillis() / 1000
 
         data class CardRow(
@@ -221,11 +257,27 @@ object CfaScorer {
                 }
             }
 
-        // Graded reviews per card (ease > 0 excludes manual reschedules).
+        // Graded reviews per card (ease > 0 excludes manual reschedules),
+        // DE-DUPLICATED per card-day so a same-day cram of one card counts once
+        // toward the give-up threshold. This mirrors the shared Rust engine's
+        // `graded_reviews_by_card` (rslib/src/scheduler/cfa_scores.rs) exactly so
+        // desktop and phone agree on the MIN_GRADED_REVIEWS give-up decision.
+        // DAY_OFFSET (~1e7 days) keeps the day-bucket dividend positive.
+        val dayOffset = 86_400.0 * 10_000_000.0
         val reviewCounts = HashMap<Long, Int>()
         col.db
             .query(
-                "select c.id, count(*) from revlog r join cards c on r.cid = c.id where r.ease > 0 group by c.id",
+                """
+                select cid, count(*) from (
+                  select c.id as cid,
+                    cast((cast(r.id as real)/1000.0 - ? + ?) / 86400.0 as integer) as day
+                  from revlog r join cards c on r.cid = c.id
+                  where r.ease > 0
+                  group by c.id, day
+                ) group by cid
+                """,
+                nextDayAt,
+                dayOffset,
             ).use { cursor ->
                 while (cursor.moveToNext()) {
                     reviewCounts[cursor.getLong(0)] = cursor.getInt(1)
@@ -283,6 +335,8 @@ object CfaScorer {
 
         val readiness = readinessScore(memory, performance, coveragePct)
 
+        val bayesian = bayesianReadiness(col, weights, topicPrefixes, today, nextDayAt, nowSecs)
+
         return CfaScores(
             memory = memory,
             performance = performance,
@@ -294,6 +348,210 @@ object CfaScorer {
             gradedReviews = totalReviews,
             firstExposures = firstExposures,
             source = CfaScores.SOURCE_FALLBACK,
+            bayesian = bayesian,
+        )
+    }
+
+    // --- Bayesian readiness "hero" (mirrors pylib/anki/cfa._py_bayesian_readiness) ---
+
+    /** Standing honesty caveat shown with the verdict (matches READINESS_LABEL in cfa.py). */
+    private const val READINESS_LABEL = "not validated against real exam data"
+
+    // Uniform Beta(1,1) prior + two-sided z for the 95% credible band.
+    private const val PRIOR_A = 1.0
+    private const val PRIOR_B = 1.0
+    private const val BAND_Z = 1.959963984540054
+
+    /**
+     * Per-card recall probability, with an SM-2 fallback when FSRS R is NULL.
+     * Byte-mirror of `estimate_recall` in pylib/anki/cfa.py.
+     */
+    private fun estimateRecall(
+        r: Double?,
+        ivlDays: Double?,
+        elapsedDays: Double?,
+        successes: Int,
+        total: Int,
+    ): Double? {
+        if (r != null) return r.coerceIn(0.0, 1.0)
+        if (total <= 0) return null
+        val ivl = (ivlDays ?: 1.0).coerceAtLeast(1.0)
+        val elapsed = (elapsedDays ?: 0.0).coerceAtLeast(0.0)
+        val curve = Math.pow(0.9, elapsed / ivl)
+        val empirical = successes.toDouble() / total
+        return (0.5 * curve + 0.5 * empirical).coerceIn(0.0, 1.0)
+    }
+
+    /** Mean and variance of Beta(a, b). */
+    private fun betaMeanVar(
+        a: Double,
+        b: Double,
+    ): Pair<Double, Double> {
+        val n = a + b
+        return Pair(a / n, (a * b) / (n * n * (n + 1.0)))
+    }
+
+    /**
+     * Standard-normal CDF. Rust/Python use exact `erf`; this uses the
+     * Abramowitz & Stegun 7.1.26 approximation (max abs error ~1.5e-7), which is
+     * far below the display precision of the pass/fail probability.
+     */
+    private fun normCdf(x: Double): Double = 0.5 * (1.0 + erf(x / sqrt(2.0)))
+
+    private fun erf(x: Double): Double {
+        val sign = if (x < 0) -1.0 else 1.0
+        val ax = kotlin.math.abs(x)
+        val t = 1.0 / (1.0 + 0.3275911 * ax)
+        val y =
+            1.0 -
+                (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) *
+                t * exp(-ax * ax)
+        return sign * y
+    }
+
+    /**
+     * Compute the Bayesian pass/fail verdict deterministically on-device. Never
+     * abstains. Mirrors `_py_bayesian_readiness`: one first-exposure Bernoulli
+     * trial per card feeds a per-topic Beta posterior, aggregated by exam weight.
+     */
+    private fun bayesianReadiness(
+        col: Collection,
+        weights: Map<String, Double>,
+        topicPrefixes: List<String>,
+        today: Int,
+        nextDayAt: Long,
+        nowSecs: Long,
+    ): BayesianVerdict {
+        data class CardRow(
+            val cid: Long,
+            val tags: String,
+            val r: Double?,
+            val ivl: Double,
+        )
+        val cardRows = ArrayList<CardRow>()
+        col.db
+            .query(
+                """
+                select c.id, n.tags,
+                  extract_fsrs_retrievability(
+                    c.data,
+                    case when c.odue != 0 then c.odue else c.due end,
+                    c.ivl, ?, ?, ?),
+                  c.ivl
+                from cards c join notes n on c.nid = n.id
+                """,
+                today,
+                nextDayAt,
+                nowSecs,
+            ).use { cursor ->
+                while (cursor.moveToNext()) {
+                    val rr = if (cursor.isNull(2)) null else cursor.getDouble(2)
+                    cardRows.add(CardRow(cursor.getLong(0), cursor.getString(1) ?: "", rr, cursor.getDouble(3)))
+                }
+            }
+
+        // Per card: graded total, successes, last-review ms, and the ease of the
+        // FIRST graded review (the exam-like Bernoulli trial for the posterior).
+        data class Stat(
+            val total: Int,
+            val succ: Int,
+            val lastMs: Long,
+            val firstEase: Int?,
+        )
+        val stats = HashMap<Long, Stat>()
+        col.db
+            .query(
+                """
+                select c.id, count(*),
+                  sum(case when r.ease >= $CORRECT_EASE then 1 else 0 end),
+                  max(r.id),
+                  (select r2.ease from revlog r2
+                     where r2.cid = c.id and r2.ease > 0 order by r2.id limit 1)
+                from revlog r join cards c on r.cid = c.id
+                where r.ease > 0
+                group by c.id
+                """,
+            ).use { cursor ->
+                while (cursor.moveToNext()) {
+                    val firstEase = if (cursor.isNull(4)) null else cursor.getInt(4)
+                    stats[cursor.getLong(0)] =
+                        Stat(cursor.getInt(1), cursor.getInt(2), cursor.getLong(3), firstEase)
+                }
+            }
+
+        val perSucc = HashMap<String, Int>().apply { topicPrefixes.forEach { put(it, 0) } }
+        val perFail = HashMap<String, Int>().apply { topicPrefixes.forEach { put(it, 0) } }
+        val perRecall = HashMap<String, MutableList<Double>>().apply { topicPrefixes.forEach { put(it, mutableListOf()) } }
+        for (row in cardRows) {
+            val topic = topicOf(row.tags, topicPrefixes) ?: continue
+            val st = stats[row.cid]
+            if (st?.firstEase != null) {
+                if (st.firstEase >= CORRECT_EASE) perSucc[topic] = perSucc[topic]!! + 1 else perFail[topic] = perFail[topic]!! + 1
+            }
+            val total = st?.total ?: 0
+            val succ = st?.succ ?: 0
+            val lastMs = st?.lastMs ?: 0L
+            val elapsed = if (lastMs > 0L) (nowSecs - lastMs / 1000.0) / 86_400.0 else 0.0
+            estimateRecall(row.r, row.ivl, elapsed, succ, total)?.let { perRecall[topic]!!.add(it) }
+        }
+
+        // Per-topic Beta posterior mean + variance, then an exam-weighted aggregate.
+        val rawW = topicPrefixes.map { (weights[it] ?: 0.0).coerceAtLeast(0.0) }
+        val normSource = if (rawW.sum() <= 0.0) List(topicPrefixes.size) { 1.0 } else rawW
+        val totalW = normSource.sum().takeIf { it > 0.0 } ?: 1.0
+
+        var mu = 0.0
+        var varAgg = 0.0
+        var recNum = 0.0
+        var recDen = 0.0
+        var covered = 0
+        var firstExposures = 0
+        topicPrefixes.forEachIndexed { i, topic ->
+            val s = perSucc[topic]!!
+            val f = perFail[topic]!!
+            firstExposures += s + f
+            if (s + f > 0) covered++
+            val (m, v) = betaMeanVar(PRIOR_A + s, PRIOR_B + f)
+            val w = normSource[i] / totalW
+            mu += w * m
+            varAgg += w * w * v
+            val recs = perRecall[topic]!!
+            if (recs.isNotEmpty()) {
+                recNum += w * recs.average()
+                recDen += w
+            }
+        }
+
+        val stdAgg = sqrt(varAgg)
+        val accuracy = mu.coerceIn(0.0, 1.0)
+        val ciLow = (mu - BAND_Z * stdAgg).coerceAtLeast(0.0)
+        val ciHigh = (mu + BAND_Z * stdAgg).coerceAtMost(1.0)
+        var pPass =
+            if (stdAgg > 0) {
+                1.0 - normCdf((MPS - mu) / stdAgg)
+            } else if (mu >= MPS) {
+                1.0
+            } else {
+                0.0
+            }
+        pPass = pPass.coerceIn(0.0, 1.0)
+        val passed = pPass >= 0.5
+        val call = if (passed) "likely pass" else "likely fail"
+        val callProb = if (passed) pPass else 1.0 - pPass
+
+        return BayesianVerdict(
+            call = call,
+            callProb = callProb,
+            passed = passed,
+            accuracy = accuracy,
+            ciLow = ciLow,
+            ciHigh = ciHigh,
+            mps = MPS,
+            recall = if (recDen > 0) recNum / recDen else null,
+            firstExposures = firstExposures,
+            topicsCovered = covered,
+            topicsTotal = topicPrefixes.size,
+            label = READINESS_LABEL,
         )
     }
 

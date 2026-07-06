@@ -345,14 +345,38 @@ abstract class NavigationDrawerActivity(
             Runnable {
                 // Take action if a different item selected
                 when (item.itemId) {
+                    R.id.nav_cfa_home -> {
+                        Timber.i("Navigating to CFA Home")
+                        startActivity(CfaHomeActivity.getIntent(this@NavigationDrawerActivity))
+                    }
+
+                    R.id.nav_cfa_study -> {
+                        Timber.i("Navigating to CFA Study by Exam Priority")
+                        startActivity(CfaExamPriorityActivity.getIntent(this@NavigationDrawerActivity))
+                    }
+
+                    R.id.nav_cfa_ethics -> {
+                        Timber.i("Navigating to CFA Ethics Minimal-Pairs drill")
+                        startActivity(CfaEthicsStudyActivity.getIntent(this@NavigationDrawerActivity))
+                    }
+
                     R.id.nav_cfa_readiness -> {
                         Timber.i("Navigating to CFA Exam Readiness")
                         startActivity(CfaExamReadinessActivity.getIntent(this@NavigationDrawerActivity))
                     }
 
+                    R.id.nav_cfa_concept_map -> {
+                        Timber.i("Navigating to CFA Concept Map")
+                        startActivity(CfaConceptMapActivity.getIntent(this@NavigationDrawerActivity))
+                    }
+
                     R.id.nav_cfa_sync_account -> {
-                        Timber.i("Navigating to sync account screen")
-                        startActivity(AccountActivity.getIntent(this@NavigationDrawerActivity))
+                        Timber.i("Navigating to CFA Connect & Sync")
+                        if (isLoggedIn()) {
+                            startActivity(DeckPicker.getIntent(this@NavigationDrawerActivity, autoSync = true))
+                        } else {
+                            startActivity(AccountActivity.getIntent(this@NavigationDrawerActivity))
+                        }
                     }
 
                     R.id.nav_decks -> {

@@ -5,6 +5,28 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <group android:id="@+id/group1"
         android:checkableBehavior="single">
+        <!-- CFA fork: native CFA nav, ordered to match the desktop top bar —
+             Home / Study / Ethics / Concept Map / Readiness. -->
+        <!-- CFA fork: the CFA Home / Today dashboard, the native CFA landing screen. -->
+        <item
+            android:id="@+id/nav_cfa_home"
+            android:icon="@drawable/ic_cfa_home"
+            android:title="@string/cfa_nav_home" />
+        <!-- CFA fork: study by exam priority (weakest topics first). -->
+        <item
+            android:id="@+id/nav_cfa_study"
+            android:icon="@drawable/ic_cfa_study"
+            android:title="@string/cfa_nav_study" />
+        <!-- CFA fork: the flagship Ethics Minimal-Pairs drill. -->
+        <item
+            android:id="@+id/nav_cfa_ethics"
+            android:icon="@drawable/ic_cfa_ethics"
+            android:title="@string/cfa_nav_ethics" />
+        <!-- CFA fork: the Concept Map (radial mastery map), identical on phone & desktop. -->
+        <item
+            android:id="@+id/nav_cfa_concept_map"
+            android:icon="@drawable/ic_cfa_concept_map"
+            android:title="@string/cfa_nav_concept_map" />
         <!-- CFA fork: flagship entry into the Exam Readiness surface. -->
         <item
             android:id="@+id/nav_cfa_readiness"
@@ -20,8 +42,8 @@
         <item
             android:id="@+id/nav_stats"
             android:icon="@drawable/ic_bar_chart_black"/>
-        <!-- CFA fork: Log out — right under Statistics. Opens the sync account
-             screen (Log out when logged in, Log in otherwise). -->
+        <!-- CFA fork: Connect & Sync — right under Statistics. Opens account
+             setup when logged out, or triggers the existing DeckPicker sync when logged in. -->
         <item
             android:id="@+id/nav_cfa_sync_account"
             android:icon="@drawable/ic_sync"

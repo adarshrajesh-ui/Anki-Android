@@ -16,6 +16,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.cfa.CfaExamConfig
+import com.ichi2.anki.cfa.examDateFieldContentDescription
 import com.ichi2.anki.snackbar.showSnackbar
 import timber.log.Timber
 import java.time.Instant
@@ -38,24 +39,70 @@ class CfaExamConfigActivity : AnkiActivity(R.layout.activity_cfa_exam_config) {
             setDisplayHomeAsUpEnabled(true)
             title = getString(R.string.cfa_exam_config_title)
         }
+        CfaShell.install(this, CfaShell.Tab.MORE)
 
         val dateView = findViewById<TextView>(R.id.cfa_config_date_value)
+        val countdownView = findViewById<TextView>(R.id.cfa_config_countdown)
 
         launchCatchingTask {
             val existing = withCol { CfaExamConfig.read(this) }
             selectedDate = existing?.examDate
             dateView.text = selectedDate ?: getString(R.string.cfa_exam_config_no_date)
+            updateDateAffordance(dateView)
+            renderCountdown(countdownView)
         }
 
-        findViewById<MaterialButton>(R.id.cfa_config_pick_date).setOnClickListener {
-            showDatePicker(dateView)
+        // Phase B Pass-3 (M-P3-3): the date box looks like an input, so it IS the
+        // control — tapping it opens the picker. The prior design put the only
+        // real affordance on a separate "Pick date" button while this box sat
+        // inert (a false affordance); that redundant button is gone.
+        dateView.setOnClickListener {
+            showDatePicker(dateView, countdownView)
         }
         findViewById<MaterialButton>(R.id.cfa_config_save).setOnClickListener {
             save()
         }
     }
 
-    private fun showDatePicker(dateView: TextView) {
+    /**
+     * Announce the date box to TalkBack as a control carrying its current value
+     * and the action activating it performs (M-P3-3), via the pure, unit-tested
+     * [examDateFieldContentDescription].
+     */
+    private fun updateDateAffordance(dateView: TextView) {
+        dateView.contentDescription = examDateFieldContentDescription(selectedDate)
+    }
+
+    /**
+     * Show a live "N days to the exam" preview under the date when one is set,
+     * so the screen isn't a bare title + field (Phase B Pass-2 M4-2). Purely a
+     * presentation of the already-selected date via the testable
+     * [CfaExamConfig.daysUntil]; nothing is persisted here.
+     */
+    private fun renderCountdown(countdownView: TextView) {
+        val days = CfaExamConfig.daysUntil(selectedDate, LocalDate.now(ZoneOffset.UTC))
+        if (days == null) {
+            countdownView.visibility = android.view.View.GONE
+            return
+        }
+        countdownView.text =
+            when {
+                days > 0L ->
+                    resources.getQuantityString(
+                        R.plurals.cfa_exam_config_countdown,
+                        days.toInt(),
+                        days.toInt(),
+                    )
+                days == 0L -> getString(R.string.cfa_exam_config_countdown_today)
+                else -> getString(R.string.cfa_exam_config_countdown_past)
+            }
+        countdownView.visibility = android.view.View.VISIBLE
+    }
+
+    private fun showDatePicker(
+        dateView: TextView,
+        countdownView: TextView,
+    ) {
         val selection =
             selectedDate?.let {
                 // Fully-qualified to avoid AnkiActivity's suspend `runCatching` extension.
@@ -79,6 +126,8 @@ class CfaExamConfigActivity : AnkiActivity(R.layout.activity_cfa_exam_config) {
             val date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
             selectedDate = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
             dateView.text = selectedDate
+            updateDateAffordance(dateView)
+            renderCountdown(countdownView)
         }
         picker.show(supportFragmentManager, "cfa_exam_date")
     }

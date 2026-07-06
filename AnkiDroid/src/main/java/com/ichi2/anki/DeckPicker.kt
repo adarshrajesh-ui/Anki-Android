@@ -517,8 +517,11 @@ open class DeckPicker :
         setupEdgeToEdge()
         title = resources.getString(R.string.app_name)
 
-        deckPickerBinding.deckPickerContent.visibility = View.GONE
-        deckPickerBinding.noDecksPlaceholder.visibility = View.GONE
+        // CFA fork: on a genuine cold launch, open into the native CFA Home
+        // dashboard instead of this raw deck list (desktop parity). Tightly
+        // guarded so in-app navigation to the decks never loops back. See
+        // CfaBootstrap.maybeOpenCfaHome.
+        maybeOpenCfaHome(savedInstanceState)
 
         // specify a LinearLayoutManager for the RecyclerView
         decksLayoutManager = LinearLayoutManager(this)
@@ -1906,9 +1909,9 @@ open class DeckPicker :
     override fun sync(conflict: ConflictResolution?) {
         val hkey = Prefs.hkey
         if (hkey.isNullOrEmpty()) {
-            Timber.w("User not logged in")
+            Timber.i("User not logged in; opening sync login")
             pullToSyncWrapper.isRefreshing = false
-            showSyncErrorDialog(SyncErrorDialog.Type.DIALOG_USER_NOT_LOGGED_IN_SYNC)
+            loginToSyncServer()
             return
         }
 

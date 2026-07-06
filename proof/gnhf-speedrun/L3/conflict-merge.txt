@@ -1,0 +1,106 @@
+M3 — Same-card offline conflict merge (device-observable)  [Sunday 7b]
+======================================================================
+Branch: gnhf/speedrun-mobile   Device: emulator-5554 (AVD ankidroid_cfa)
+Package: com.ichi2.anki.debug   Sync server: http://10.0.2.2:27701/ (user cfa)
+Captured: 2026-07-04 (single GNHF run)
+
+GOAL
+----
+Review the SAME card on BOTH devices while offline, sync, and show the
+documented conflict rule picks a clear winner — device-observable, no fabrication.
+
+THE RULE (documented)
+---------------------
+"More-recent review wins." The card's final scheduling STATE reflects whichever
+review happened later in wall-clock time (mirrors Anki's own last-writer-wins:
+higher modification time is kept). BOTH reviews still persist in the revlog as
+distinct millisecond-id rows, so no review is lost and none is double-counted;
+only the current card state is decided by the rule.
+Reference: desktop pylib/anki/cfa_sync.py::resolve_review_conflict + the
+revlog is append-only and keyed by unique ms ids.
+
+SCENARIO (a genuine offline divergence from a shared base)
+----------------------------------------------------------
+Both devices start synced to the server (BASE, revlog=28). Then, independently:
+
+1. PHONE goes OFFLINE (airplane mode; `ping 10.0.2.2` => Network unreachable).
+   In the AnkiDroid reviewer it answers card X = 1783137755188
+   ("What defines a hedge fund as an investment vehicle?") = AGAIN (ease 1).
+   -> phone card X: reps 0->1, queue=1 (learning), ivl~60s.
+   -> phone revlog row p_id = 1783212583931 (ease=1). Phone revlog 28->29.
+   -> screenshots 01/02 show the airplane icon (offline) + the 4 ease buttons.
+
+2. DESKTOP reviews the SAME card X from the BASE (the phone's Again is NOT on
+   the server yet — phone is offline). It answers card X = EASY (ease 4) at a
+   LATER wall-clock time (desktop revlog id 1783212648010 > phone 1783212583931).
+   -> desktop card X: reps 0->1, queue=2 (review), ivl=4d.
+   -> desktop uploads. Server now has the desktop review.
+   DESKTOP_CONFLICT_MARKER (from cfa_desktop_conflict_review.py):
+     card_id=1783137755188  reps_before=0 reps_after=1  desktop_answer=Easy(4)
+     desktop_revlog_id=1783212648010  desktop_card_queue=2 type=2 ivl=4
+     revlog_base=28 (phone's offline Again absent, as expected)
+
+3. PHONE comes back ONLINE and syncs (logcat: "sending done=true ... revlog=1"
+   = phone uploaded its offline Again; then the merge pulls the desktop review).
+
+CONVERGED PHONE COLLECTION (pulled from the device, WAL applied) — GROUND TRUTH
+------------------------------------------------------------------------------
+total revlog rows: 31 (was 29 phone-only; +2 from the desktop side)
+
+All revlog rows for card X (id | ease | type | ivl):
+  1783212583931 | ease=1 | type=0 | ivl=-60   <- PHONE's offline Again  (PRESERVED)
+  1783212648009 | ease=0 | type=4 | ivl=1      <- desktop set_due_date marker (ease=0, NOT a graded review)
+  1783212648010 | ease=4 | type=1 | ivl=4      <- DESKTOP's Easy (graded, the WINNER)
+
+Card X converged state: reps=1 lapses=0 queue=2 type=2 ivl=4d due=5 mod=1783212648
+
+CLEAR WINNER — device-observable
+--------------------------------
+* The converged card state is queue=2 (review), ivl=4d, mod=1783212648 — the
+  DESKTOP's Easy outcome, i.e. the MORE-RECENT review. The phone's own Again
+  (which had left the card in queue=1 learning, ivl~60s) was OVERRIDDEN.
+* DeckPicker proves it visibly: CFA Level II went "2 0 0" (base) -> "1 1 0"
+  after the phone's offline Again put card X into LEARNING (screenshot 03)
+  -> back to "2 0 0" after sync, card X returned to the REVIEW queue per the
+  desktop's graduation (screenshot 04). "Studied" 26 -> 27.
+* NO LOST REVIEW: the phone's own offline Again row (1783212583931) is still
+  present on the device after the merge.
+* NO DOUBLE-COUNT: card X reps=1, not 2 — both devices independently moved reps
+  0->1; the converged card keeps the winner's single state.
+
+Anti-cram dedup note (honest):
+  The Readiness screen's displayed "N graded reviews" is the RAW revlog-row
+  count and rose 26 -> 28 (the two conflict reviews, screenshot 05). The
+  engine's anti-cram DEDUPED count (per-(card, collection-day), the M1 give-up
+  metric) is 21: the two same-card same-day reviews collapse to a single
+  (card, day) key. Both numbers are reported truthfully.
+
+ENGINE-LEVEL CORROBORATION (desktop pytest, now de-flaked)
+----------------------------------------------------------
+pylib/tests/test_cfa_sync.py::test_conflict_more_recent_wins_no_lost_or_double_reviews
+  reviews the same card on two paired collections (desktop ease 1, phone ease 4),
+  syncs, and asserts: both distinct revlog ids survive on both sides, no
+  duplicate ids, converged last-review == the more-recent one, and
+  resolve_review_conflict() agrees with what the sync engine actually did.
+  Stable 12/12 runs.
+Whole file: PASS 20/20 runs after fixing a pre-existing timing flake in
+  test_roundtrip_ethics_and_cfa_card_revlog_counts_match (root cause: a
+  same-millisecond collection-mod anchor collision made the receiver's
+  incremental sync report NO_CHANGES; extra sync rounds did NOT help — spacing
+  the review's mod out via a 50ms settle in _review() is the real fix).
+
+REPRODUCE
+---------
+Desktop side: from the ankiCFA desktop repo root with the built pyenv:
+  out/pyenv/bin/python proof/.../conflict-merge/cfa_desktop_conflict_review.py <card_id>
+Phone side: airplane-mode ON -> review one card in the AnkiDroid reviewer ->
+  identify card X from the newest phone revlog row -> run the desktop script
+  against that card id -> airplane-mode OFF -> sync the phone -> pull the
+  collection (+ -wal) and inspect.
+
+SCREENSHOT SEQUENCE (NO VIDEO)  proof/gnhf-speedrun/L3/conflict-merge/
+  01-phone-offline-review-question.png          reviewer, airplane on, card X question
+  02-phone-offline-answer-again.png             answer shown + 4 ease buttons (offline)
+  03-phone-presync-cardX-in-learning-1-1-0.png  after Again: CFA L2 "1 1 0" (card X in learning)
+  04-phone-postsync-cardX-back-in-review-2-0-0.png  after sync: "2 0 0" (desktop Easy won)
+  05-phone-readiness-28graded-after-conflict.png    Readiness: 28 graded reviews, honest abstain

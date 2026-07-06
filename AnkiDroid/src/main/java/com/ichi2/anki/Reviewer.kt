@@ -54,6 +54,7 @@ import com.ichi2.anki.Whiteboard.Companion.createInstance
 import com.ichi2.anki.Whiteboard.OnPaintColorChangeListener
 import com.ichi2.anki.cardviewer.Gesture
 import com.ichi2.anki.cardviewer.ViewerCommand
+import com.ichi2.anki.cfa.CfaEthicsSync
 import com.ichi2.anki.common.annotations.NeedsTest
 import com.ichi2.anki.common.crashreporting.CrashReportService
 import com.ichi2.anki.common.destinations.CardInfoDestination
@@ -1303,7 +1304,37 @@ open class Reviewer :
         if (stopTimerOnAnswer) {
             answerTimer.pause()
         }
+        // CFA: capture a completed ethics attempt from the FRONT card's localStorage
+        // and persist it into the card's custom_data BEFORE super swaps in the answer
+        // side (whose template clears the pending payload). Parity with desktop
+        // cfa_ethics_sync so an ethics highlight / governing Standard crosses devices
+        // through normal collection sync.
+        persistCfaEthicsAttempt()
         super.displayCardAnswer()
+    }
+
+    /**
+     * Read the completed ethics attempt the card template stashed in
+     * `localStorage["cfaEthics:pending"]` and merge its compact summary into the
+     * current card's `custom_data` (see [CfaEthicsSync]). No-op for non-ethics
+     * cards (no pending payload) and fail-soft so a persistence hiccup never
+     * disrupts the review. Mirrors desktop's `reviewer_did_show_answer` hook.
+     */
+    private fun persistCfaEthicsAttempt() {
+        val cardId = currentCard?.id ?: return
+        val web = webView ?: return
+        // localStorage survives the front->answer reload (same origin) and is only
+        // cleared by the answer template's script, which runs after this dispatched
+        // read — so the read reliably sees the front's completed-attempt payload.
+        web.evaluateJavascript("localStorage.getItem('${CfaEthicsSync.LOCAL_STORAGE_KEY}')") { raw ->
+            launchCatchingTask {
+                try {
+                    withCol { CfaEthicsSync.persistFromLocalStorage(this, cardId, raw) }
+                } catch (e: Exception) {
+                    Timber.w(e, "CFA: failed to persist ethics attempt custom_data")
+                }
+            }
+        }
     }
 
     private fun runStateMutationHook() {

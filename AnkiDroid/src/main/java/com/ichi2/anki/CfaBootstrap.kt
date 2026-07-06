@@ -4,7 +4,9 @@
 
 package com.ichi2.anki
 
+import android.content.Intent
 import android.net.Uri
+import android.os.Bundle
 import androidx.core.content.edit
 import anki.import_export.importAnkiPackageOptions
 import com.ichi2.anki.CollectionManager.withCol
@@ -22,6 +24,59 @@ private const val CFA_BOOTSTRAP_ASSET = "cfa/cfa-bootstrap.apkg"
 
 /** Deck name for the bundled two-vignette minimal-pairs ethics flagship. */
 const val CFA_ETHICS_PAIRS_DECK = "CFA::Ethics Pairs"
+
+// --- CFA Home landing --------------------------------------------------------
+//
+// The desktop app OPENS INTO the native CFA Home dashboard instead of the raw
+// deck list; the phone mirrors that by handing off from the launcher DeckPicker
+// to [CfaHomeActivity] exactly once per process, and ONLY on a genuine cold
+// launch (an ACTION_MAIN + CATEGORY_LAUNCHER intent). In-app navigation to the
+// deck list (Home's "Browse decks" CTA, the nav-drawer "Decks" entry) uses a
+// plain component Intent with no action/category, so it never triggers the
+// hand-off — which is what stops a Home <-> DeckPicker bounce loop.
+
+/** Set once per process the first time the launcher hands off to CFA Home. */
+@Volatile
+var cfaHomeOpenedThisProcess = false
+
+/**
+ * Pure decision for whether a DeckPicker start should hand off to the CFA Home
+ * landing screen. Kept free of Android framework calls so the guard (which is
+ * the whole point — it must NOT fire on in-app navigation or activity
+ * recreation) is unit-testable without a device.
+ *
+ * Fires only on a fresh cold launch from the launcher: not on a config-change
+ * recreation ([isFreshStart] = savedInstanceState == null), not on in-app
+ * navigation (only ACTION_MAIN + CATEGORY_LAUNCHER), and at most once per
+ * process ([alreadyOpenedThisProcess]).
+ */
+fun shouldOpenCfaHomeOnLaunch(
+    intentAction: String?,
+    isLauncherCategory: Boolean,
+    isFreshStart: Boolean,
+    alreadyOpenedThisProcess: Boolean,
+): Boolean =
+    !alreadyOpenedThisProcess &&
+        isFreshStart &&
+        intentAction == Intent.ACTION_MAIN &&
+        isLauncherCategory
+
+/**
+ * On a genuine cold launch, hand off from the launcher DeckPicker to the native
+ * CFA Home dashboard (the desktop-parity landing), leaving DeckPicker on the
+ * back stack so Back from Home returns to the deck list. A no-op on in-app
+ * navigation, recreation, or any subsequent launch this process (see
+ * [shouldOpenCfaHomeOnLaunch]).
+ */
+fun DeckPicker.maybeOpenCfaHome(savedInstanceState: Bundle?) {
+    val launcher = intent?.hasCategory(Intent.CATEGORY_LAUNCHER) == true
+    if (!shouldOpenCfaHomeOnLaunch(intent?.action, launcher, savedInstanceState == null, cfaHomeOpenedThisProcess)) {
+        return
+    }
+    cfaHomeOpenedThisProcess = true
+    Timber.i("CFA: cold launch — opening CFA Home landing over the deck list")
+    startActivity(CfaHomeActivity.getIntent(this))
+}
 
 /**
  * On the very first launch of a fresh profile, seed the collection with the two

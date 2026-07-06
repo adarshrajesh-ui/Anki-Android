@@ -1,0 +1,40 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#1c1c1c;color:#eee;padding:28px}
+  h1{font-size:19px;margin:0 0 4px} .sub{color:#9aa;font-size:13px;margin:0 0 22px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;max-width:900px}
+  .col h2{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:#c9c9c9;margin:0 0 12px}
+  .row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .sw{width:120px;height:38px;border-radius:8px;border:1px solid #0003;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+  .lab{font-size:12.5px;color:#cfcfcf}
+  .lab b{color:#fff}
+  .before .sw{outline:2px solid #ff5b5b55}
+  .after .sw{outline:2px solid #5bff8b55}
+  .surface{padding:14px;border-radius:10px;margin-top:6px}
+  .dark{background:#303030} .black{background:#000}
+  .note{font-size:11.5px;color:#8a94a0;margin-top:18px;max-width:900px;line-height:1.5}
+</style></head><body>
+  <h1>ankiCFA — Dark &amp; Black theme interactive tints: stock-blue → CFA warm accent</h1>
+  <p class="sub">colorPrimary / colorAccent drive switches, links, activated widgets, tabs, "new" count &amp; dynamic-deck names on every dark-mode screen.</p>
+  <div class="grid">
+    <div class="col before"><h2>Before (stock AnkiDroid)</h2>
+      <div class="surface dark">
+        <div class="row"><div class="sw" style="background:#42A5F5;color:#fff">#42A5F5</div><span class="lab"><b>colorPrimary/Accent</b> — material_blue_400</span></div>
+        <div class="row"><div class="sw" style="background:#3C5A6E;color:#fff">#3C5A6E</div><span class="lab">colorSecondaryContainer (blue-grey)</span></div>
+        <div class="row"><div class="sw" style="background:#9FA8DA;color:#111">#9FA8DA</div><span class="lab">newCount — material_indigo_200</span></div>
+        <div class="row"><div class="sw" style="background:#03A9F4;color:#fff">#03A9F4</div><span class="lab">dynDeck / tab — light_blue_500</span></div>
+      </div>
+    </div>
+    <div class="col after"><h2>After (CFA design system)</h2>
+      <div class="surface dark">
+        <div class="row"><div class="sw" style="background:#F0894A;color:#122B46">#F0894A</div><span class="lab"><b>colorPrimary/Accent</b> — cfa_accent_on_navy · 5.25:1 on #303030</span></div>
+        <div class="row"><div class="sw" style="background:#122B46;color:#fff">#122B46</div><span class="lab">colorSecondaryContainer — cfa_navy</span></div>
+        <div class="row"><div class="sw" style="background:#F0894A;color:#122B46">#F0894A</div><span class="lab">newCount — cfa_accent_on_navy</span></div>
+        <div class="row"><div class="sw" style="background:#F0894A;color:#122B46">#F0894A</div><span class="lab">dynDeck / tab — cfa_accent_on_navy</span></div>
+      </div>
+      <div class="surface black" style="margin-top:12px">
+        <div class="row"><div class="sw" style="background:#F0894A;color:#122B46">#F0894A</div><span class="lab"><b>Black theme</b> — cfa_accent_on_navy · 8.4:1 on #000</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Learned semantic colours are intentionally untouched: Again=red, Hard, Good=green, and <b>Easy keeps its blue</b> affordance; Learn/Review counts stay red/green. Action text is surface-keyed — navy on the light dark-theme snackbar (9.3:1), warm accent on the dark dialogs. Verified by CfaThemeBrandingTest (4 green) + a clean processPlayDebugResources merge.</p>
+</body></html>
