@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!--
-  CFA fork: shared branding tokens + strings for the ankiCFA surfaces
+  CFA fork: shared branding tokens + strings for the EthosPrep surfaces
   (nav drawer entry, Exam Readiness screen, exam-config editor, exam-priority
   study). Colours mirror the desktop CFA design system
   (docs/cfa/DESIGN-SYSTEM.md): a structural navy with a warm orange accent.
@@ -87,7 +87,7 @@
 
     <!-- Nav drawer / branding. Not translated (feature in progress). -->
     <string name="cfa_brand_eyebrow">ANKICFA · CFA LEVEL II</string>
-    <string name="cfa_brand_wordmark">ankiCFA</string>
+    <string name="cfa_brand_wordmark">EthosPrep</string>
     <string name="cfa_brand_tagline">CFA Level II · Exam Prep</string>
     <string name="cfa_nav_exam_readiness" comment="Nav-drawer menu entry that opens the Exam Readiness screen; same words as its screen title but a distinct menu string" maxLength="28">Exam Readiness</string>
     <string name="cfa_title_exam_readiness" comment="Action-bar title of the Exam Readiness screen; same words as the nav-drawer entry but a distinct title string">Exam Readiness</string>
@@ -138,7 +138,7 @@
     <string name="cfa_exam_config_no_date">No exam date set</string>
     <!-- Context line under the title explaining why setting the exam date matters
          (Phase B Pass-2 M4-2 — the screen was sparse with no rationale). -->
-    <string name="cfa_exam_config_why">Set your exam date so ankiCFA can weight study by points-at-stake and show a live countdown on the Exam Readiness screen.</string>
+    <string name="cfa_exam_config_why">Set your exam date so EthosPrep can weight study by points-at-stake and show a live countdown on the Exam Readiness screen.</string>
     <!-- Live countdown preview shown once a date is picked (M4-2). -->
     <plurals name="cfa_exam_config_countdown">
         <item quantity="one">%d day to the exam</item>

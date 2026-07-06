@@ -3,7 +3,7 @@
 // CFA fork — Increment 1 (branding + nav) regression tests.
 //
 // Guards the two additive resource changes that make the AnkiDroid fork present
-// as "ankiCFA": the app label and the flagship Exam Readiness nav-drawer entry.
+// as "EthosPrep": the app label and the flagship Exam Readiness nav-drawer entry.
 // Both fail without the Increment 1 change and pass with it.
 
 package com.ichi2.anki
@@ -25,9 +25,9 @@ class CfaBrandingTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Test
-    fun `app is branded ankiCFA`() {
+    fun `app is branded EthosPrep`() {
         // Set via build.gradle resValue; the CFA identity of the fork.
-        assertThat(context.getString(R.string.app_name), equalTo("ankiCFA"))
+        assertThat(context.getString(R.string.app_name), equalTo("EthosPrep"))
     }
 
     @Test
